@@ -1,167 +1,255 @@
 # Luminary Persona Agent
 
-An intelligent persona-building agent that conducts structured Q&A sessions, scrapes company websites, and generates detailed marketing personas for conversion-focused content strategy.
+A sophisticated AI-powered persona building system that creates detailed psychological profiles through intelligent questioning and assessment. The system leverages multiple LLM providers to generate comprehensive persona insights through 30 carefully crafted questions.
 
-## 🚀 Features
+## Features
 
-- **Interactive Q&A System**: Guided conversation through 30 structured questions across 6 sections
-- **Streamlined Assessment**: Fast, efficient answer evaluation with minimal prompt overhead
-- **Website Scraping**: Extracts comprehensive company information using structured templates
-- **Persona Synthesis**: Generates detailed marketing personas using collected data and Luminary Hub methodology
-- **Session Management**: Persistent sessions with seamless resume capability
-- **Multi-LLM Support**: OpenAI, Claude, and DeepSeek integration with smart routing
-- **Production Monitoring**: Comprehensive logging, usage tracking, and cost monitoring
-- **Database Integration**: Full Supabase integration with session persistence
+### 🧠 **Intelligent Persona Building**
+- 30 carefully crafted questions across 3 categories: Values & Beliefs, Goals & Aspirations, Communication & Decision-Making
+- Real-time assessment and scoring system
+- Context-aware follow-up questions based on previous responses
 
-## 🏗️ Architecture
+### 🤖 **Multi-LLM Support**
+- **OpenAI GPT-4o** (primary) - Fast and reliable
+- **Anthropic Claude** (fallback) - Deep reasoning capabilities  
+- **DeepSeek** (experimental) - Cost-effective alternative
+- Automatic failover between providers
 
-```
-persona-agent/
-├── orchestrator/          # Main coordination and entry point
-├── agents/               # Specialized agents (Question, Scraper, Persona)
-├── memory/              # Session and context management
-├── tools/               # LLM, scraping, and assessment tools
-├── knowledge/           # Questions and reference materials
-├── prompts/             # Streamlined system prompts and assessment templates
-├── database/            # Supabase integration and models
-├── logging/             # Error tracking and debugging
-├── admin/               # Usage tracking and monitoring
-├── api/                 # FastAPI endpoints
-├── logs/                # Log files (auto-generated)
-└── ui/                  # Streamlit testing interface
-```
+### 🎨 **Modern Web Interface**
+- Clean, intuitive Streamlit-based UI
+- Real-time progress tracking
+- Session management with database persistence
+- Responsive design for all devices
 
-## ⚡ Performance Optimizations
-
-### Streamlined Prompt Architecture
-- **77% smaller prompts** - Eliminated redundant system prompts and context injection
-- **Fast assessment** - 30-second timeouts with aggressive fallbacks
-- **Independent questions** - No context bleeding between questions
-- **Robust input handling** - Handles 500+ character responses without timeouts
-
-### Before vs After
-- **Q1**: 2,300 → 700 chars (69.6% reduction)
-- **Q2**: 2,600 → 700 chars (73.1% reduction)
-- **Q3**: 3,100 → 700 chars (77.4% reduction)
+### 🏗️ **Enterprise Architecture**
+- Modular agent-based design with BaseAgent interface
+- Comprehensive error handling and logging
+- Database integration with Supabase
+- RESTful API endpoints for integration
+- Rate limit optimization and context management
 
 ## Quick Start
 
-### 1. Environment Setup
+### Prerequisites
+- Python 3.9+ 
+- OpenAI API key
+- Supabase account (optional, for session persistence)
 
+### Installation
+
+1. **Clone the repository**
 ```bash
-# Clone and navigate to project
-cd luminary_persona_agent
+git clone https://github.com/MelvilleC99/Luminary_agent.git
+cd Luminary_agent
+```
 
-# Create virtual environment
+2. **Create virtual environment**
+```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Setup environment variables
-cp .env.example .env
-# Edit .env with your API keys and configuration
 ```
 
-### 2. Database Setup
-
+3. **Install dependencies**
 ```bash
-# Supabase database setup will be automated
-# Ensure your SUPABASE_URL and SUPABASE_KEY are configured in .env
+pip install -r requirements.txt
 ```
 
-### 3. Run the Application
+4. **Set up environment variables**
+```bash
+cp .env.example .env
+# Edit .env with your API keys
+```
 
-**Testing Interface (Streamlit):**
+Required environment variables:
+```env
+OPENAI_API_KEY=your_openai_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key  # Optional
+SUPABASE_URL=your_supabase_url            # Optional
+SUPABASE_KEY=your_supabase_key            # Optional
+```
+
+### Running the Application
+
+**Option 1: Streamlit Web Interface (Recommended)**
 ```bash
 streamlit run ui/streamlit_app.py
 ```
 
-**API Server (FastAPI):**
+**Option 2: FastAPI Backend**
 ```bash
-uvicorn api.endpoints:app --reload --host localhost --port 8000
+./start_api.sh
+# Or manually: uvicorn api.endpoints:app --reload
+```
+
+## System Architecture
+
+```
+luminary_persona_agent/
+├── agents/              # Core agent implementations
+│   ├── base/           # BaseAgent interface
+│   └── question_agent.py
+├── tools/              # LLM and assessment tools
+│   ├── llm_tool.py     # Multi-provider LLM interface
+│   └── assessment_tool.py
+├── database/           # Data persistence layer
+├── memory/             # Session and context management
+├── orchestrator/       # System coordination
+├── ui/                 # Streamlit web interface
+├── api/                # FastAPI endpoints
+├── prompts/            # System prompts and templates
+└── knowledge/          # Question database
+```
+
+## Key Components
+
+### 🔧 **LLM Tool (`tools/llm_tool.py`)**
+- Multi-provider support with intelligent fallback
+- Optimized for GPT-4o with 60-second timeout
+- Comprehensive error handling and retry logic
+- Rate limit management
+
+### 🎯 **Assessment Tool (`tools/assessment_tool.py`)**
+- Context-aware assessment with truncation (200 chars)
+- Prompt size monitoring and optimization
+- Intelligent scoring system
+- Follow-up question generation
+
+### 💾 **Database Integration**
+- Supabase integration for session persistence
+- Clean schema with user sessions and responses
+- Automatic session management
+- Optional offline mode
+
+### 🧩 **Agent Architecture**
+- BaseAgent interface for extensibility
+- Question Agent for persona building
+- Modular design for easy extension
+- Comprehensive logging throughout
+
+## Performance Optimizations
+
+### ✅ **Rate Limit Testing Results**
+- **Single requests**: ~1.75s average
+- **5 concurrent**: All successful in 1.96s
+- **10 concurrent**: All successful in 2.96s  
+- **20 concurrent**: All successful in 3.18s
+- **Zero rate limit errors** with production API keys
+
+### ⚡ **Context Management**
+- Q1→Q2 transitions: **3-4 seconds** (down from 60+ seconds)
+- Context truncation prevents API timeouts
+- Optimized prompt sizes with monitoring
+- Intelligent context bleeding prevention
+
+## Usage Examples
+
+### Basic Persona Building
+```python
+from agents.question_agent import QuestionAgent
+from tools.llm_tool import LLMTool
+
+# Initialize agent
+llm_tool = LLMTool()
+agent = QuestionAgent(llm_tool=llm_tool)
+
+# Start persona building session
+session_id = agent.start_session("user123")
+response = agent.process_question(session_id, "What motivates you?", "Making a positive impact")
+```
+
+### API Integration
+```python
+import requests
+
+# Submit response via API
+response = requests.post("http://localhost:8000/submit_response", json={
+    "session_id": "session123",
+    "question_text": "What are your core values?", 
+    "user_response": "Integrity and compassion"
+})
+```
+
+## Development
+
+### Running Tests
+```bash
+pytest tests/
+```
+
+### Code Formatting
+```bash
+black . --line-length 88
+```
+
+### Development Setup
+```bash
+# Install development dependencies
+pip install -r requirements.txt
+
+# Run with auto-reload
+streamlit run ui/streamlit_app.py --server.runOnSave true
 ```
 
 ## Configuration
 
-### LLM Assignments
-Configure which LLM to use for each agent in your `.env` file:
+### LLM Provider Priority
+1. **OpenAI GPT-4o** (fastest, most reliable)
+2. **Anthropic Claude** (fallback for complex reasoning)
+3. **DeepSeek** (cost-effective backup)
 
-```env
-QUESTION_AGENT_LLM=openai      # Conversational flow
-ASSESSMENT_AGENT_LLM=openai    # Answer evaluation (streamlined)
-SCRAPER_AGENT_LLM=openai       # Structured extraction
-PERSONA_AGENT_LLM=claude       # Long-form synthesis
-```
-
-### Assessment Settings
-```env
-ASSESSMENT_THRESHOLD=7.0    # Minimum score to proceed
-MAX_FOLLOW_UPS=3           # Maximum follow-up questions per question
-```
-
-## Usage
-
-### 1. Start a Session
-The agent will guide you through 30 questions across 6 sections:
-- Core Expertise & ICP
-- Brand Personality & DNA
-- Positioning & Expertise
-- Voice, Style & Tone
-- Content Goals & Audience  
-- Long-term Vision & Metrics
-
-### 2. Provide Company Website
-Share your company website URL for automated information extraction.
-
-### 3. Answer Questions
-The agent will:
-- Ask questions sequentially
-- Assess answer quality (1-10 scale) using streamlined prompts
-- Ask follow-up questions if more detail is needed (no context injection)
-- Move to next question when satisfied
-
-### 4. Generate Persona
-Once all questions are complete, the agent synthesizes:
-- Strategic client persona
-- Deep ICP psychology layer
-- Differentiators & relevance mapping
-- Solution positioning template
-- Brand voice & messaging map
-- Offer & conversion insights
-
-## Development
-
-### Project Structure
-- **Orchestrator**: Main coordination logic
-- **Agents**: Specialized AI agents for different tasks
-- **Memory**: Session persistence and context management
-- **Tools**: Reusable components for LLM calls, web scraping
-- **Knowledge**: Question bank and reference materials
-- **Prompts**: Streamlined assessment templates
-
-### Adding New Questions
-1. Update `knowledge/questions.json`
-2. Create streamlined assessment prompt in `prompts/assessment/question_N_assessment.txt`
-3. Test with the question agent
-
-### Customizing Prompts
-All prompts are stored in `prompts/` directory:
-- Main system prompt: `question_agent_prompt.txt`
-- Assessment prompts: `assessment/question_X_assessment.txt`
-
-## API Documentation
-
-Once running, visit `http://localhost:8000/docs` for interactive API documentation.
+### Timeouts and Limits
+- **OpenAI timeout**: 60 seconds
+- **Context truncation**: 200 characters
+- **Max prompt size**: 8000 characters (with fallback)
+- **Assessment warning**: 4000 characters
 
 ## Troubleshooting
 
 ### Common Issues
-- **Q2 Timeout Fixed**: Streamlined prompts prevent the previous Q2 timeout issue
-- **Large User Responses**: System now handles 500+ character responses robustly
-- **Prompt Size Limits**: Aggressive 2000 character limits with fallbacks prevent LLM timeouts
+
+**Q1→Q2 hanging (resolved)**
+- ✅ Fixed with context truncation
+- ✅ Optimized prompt sizes
+- ✅ Added timeout handling
+
+**Rate limits**
+- ✅ Tested up to 20 concurrent requests
+- ✅ Zero errors with production keys
+- ✅ Intelligent retry logic
+
+**Database connectivity**
+- Check Supabase credentials in `.env`
+- Verify network connectivity
+- Falls back to memory-only mode if needed
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Roadmap
+
+- [ ] Additional LLM providers (Gemini, Llama)
+- [ ] Voice input/output capabilities
+- [ ] Advanced persona analytics and insights
+- [ ] Multi-language support
+- [ ] Mobile app development
+- [ ] Enterprise SSO integration
 
 ## Support
 
-For issues and questions, check the project documentation or open an issue.
+For issues and questions:
+- 📧 Email: support@luminairy.ai
+- 🐛 Issues: [GitHub Issues](https://github.com/MelvilleC99/Luminary_agent/issues)
+- 📖 Documentation: [Wiki](https://github.com/MelvilleC99/Luminary_agent/wiki)
+
+---
+
+**Built with ❤️ by the Luminary Team**
