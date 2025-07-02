@@ -1,0 +1,11 @@
+ASSESS Q2: "What's a niche within that topic where you have even more profound expertise?"
+
+CRITERIA:Look for processes, methods, specialized areas.
+
+SCORE: 1-10 (7+ = advance, <7 = follow-up) 
+FOLLOW-UP: "What specific aspect of your expertise do you focus on most?"
+
+USER ANSWER: "{user_answer}"
+
+Respond with ONLY valid JSON (no markdown):
+{"score": X, "needs_follow_up": true/false, "follow_up_question": "...", "reasoning": "..."}

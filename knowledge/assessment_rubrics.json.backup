@@ -1,0 +1,82 @@
+{
+  "question_1": {
+    "question_text": "What is a broad topic you know exceptionally well?",
+    "required_elements": [
+      "specific_domain_expertise",
+      "clear_focus_area"
+    ],
+    "context_aware_follow_ups": {
+      "extract_topic_and_ask": "What type of {extracted_topic} do you focus on specifically?",
+      "ask_for_specialization": "Within {extracted_topic}, what's your particular area of expertise?",
+      "ask_for_context": "What kind of {extracted_topic} work do you do most often?"
+    },
+    "conversation_templates": {
+      "one_word_answer": "What type of {topic} do you specialize in?",
+      "generic_business": "What specific area of {topic} do you focus on?",
+      "multiple_topics": "Which of these areas do you have the deepest expertise in: {topics}?"
+    },
+    "good_examples": [
+      "Personal productivity",
+      "Customer success / retention", 
+      "Process mapping in retail environments"
+    ],
+    "poor_examples": [
+      "Business",
+      "Marketing",
+      "Consulting"
+    ]
+  },
+  "question_2": {
+    "question_text": "What's a niche within that topic where you have even more profound expertise?",
+    "required_elements": [
+      "specific_niche_within_broad_topic",
+      "deeper_specialization"
+    ],
+    "context_aware_follow_ups": {
+      "build_on_q1": "Within {q1_answer}, what specific aspect do you focus on?",
+      "ask_for_methods": "What particular approach or method do you use for {q1_answer}?", 
+      "ask_for_specifics": "Can you be more specific about what type of {q1_answer} work you do?"
+    },
+    "conversation_templates": {
+      "too_broad_still": "Let's get more specific - within {q1_topic}, what's your specialty?",
+      "needs_examples": "What does {their_answer} look like in practice? Any specific areas?",
+      "good_but_expand": "That's helpful! Are there particular aspects of {their_answer} you focus on?"
+    },
+    "good_examples": [
+      "Q1: Personal productivity → Q2: Prioritisation, Calendar management",
+      "Q1: Customer success → Q2: Customer conversations, Listening to customers",
+      "Q1: Process mapping → Q2: Point of sale data analysis"
+    ]
+  },
+  "question_3": {
+    "question_text": "Who do you help in this niche (industry, role, type of business)?",
+    "required_elements": [
+      "specific_industry_or_vertical",
+      "clear_decision_maker_roles", 
+      "defined_business_characteristics"
+    ],
+    "context_aware_follow_ups": {
+      "build_on_expertise": "Who typically needs help with {q1_expertise} and {q2_niche}?",
+      "ask_for_roles": "What roles or job titles do you usually work with for {q2_niche}?",
+      "ask_for_industries": "Which industries have the biggest need for {q2_niche}?"
+    },
+    "quality_indicators": [
+      "precise roles with job titles",
+      "clear industry nuances",
+      "segment-specific details (company size, turnover, employee count, market focus)"
+    ],
+    "red_flags": [
+      "broad terms without specificity",
+      "unclear decision-maker roles", 
+      "no clear market segmentation"
+    ],
+    "follow_up_templates": {
+      "missing_specificity": "Could you specify the exact industries and roles of the decision-makers?",
+      "missing_context": "Can you provide more context or a scenario describing a typical client?",
+      "missing_examples": "Can you share an example of a typical business you work with?",
+      "too_broad": "Can you narrow down the type of businesses or industries you typically target?"
+    },
+    "good_example": "I help Marketing Directors and CMOs at software-as-a-service (SaaS) companies in the HR tech sector, specifically those with annual revenues of $5M–$20M.",
+    "poor_example": "I help businesses improve marketing."
+  }
+}
