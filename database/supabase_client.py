@@ -18,28 +18,13 @@ class SupabaseClient:
         self.supabase_key = supabase_key
         self.client = None
         
-        # Initialize real Supabase connection with limited connection pool
+        # Initialize real Supabase connection
         try:
             from supabase import create_client, Client
-            import httpx
             
-            # Create httpx client with limited connection pool to prevent interference
-            http_client = httpx.AsyncClient(
-                limits=httpx.Limits(
-                    max_connections=5,  # Limit Supabase connections
-                    max_keepalive_connections=2
-                )
-            )
-            
-            # Create Supabase client with limited HTTP client
-            self.client: Client = create_client(
-                supabase_url, 
-                supabase_key,
-                options={
-                    "postgrest": {"client": http_client}
-                }
-            )
-            logger.info("✅ Supabase client connected to real database with limited connections")
+            # Create Supabase client with standard configuration
+            self.client: Client = create_client(supabase_url, supabase_key)
+            logger.info("✅ Supabase client connected successfully")
         except ImportError:
             logger.error("❌ Supabase package not installed. Install with: pip install supabase")
             self.client = None
@@ -49,17 +34,11 @@ class SupabaseClient:
             logger.warning("⚠️ Falling back to simulation mode")
         except Exception as e:
             logger.error(f"❌ Failed to connect to Supabase: {e}")
-            # Fallback without custom HTTP client
-            try:
-                from supabase import create_client, Client
-                self.client: Client = create_client(supabase_url, supabase_key)
-                logger.info("✅ Supabase client connected (fallback mode)")
-            except:
-                self.client = None
-                # Initialize fallback storage
-                self._sessions = {}
-                self._messages = {}
-                logger.warning("⚠️ Falling back to simulation mode")
+            self.client = None
+            # Initialize fallback storage
+            self._sessions = {}
+            self._messages = {}
+            logger.warning("⚠️ Falling back to simulation mode")
     
     async def create_session(self, session: PersonaSession) -> PersonaSession:
         """Create a new session."""
@@ -69,13 +48,14 @@ class SupabaseClient:
                 session_data = {
                     'id': session.id,
                     'user_id': session.user_id,
-                    'current_question': session.current_question,
-                    'questions_completed': session.questions_completed,
                     'status': session.status,
                     'website_url': session.website_url,
+                    'framework_completion_percentage': 0.0,
+                    'conversation_turn_count': 0,
+                    'total_information_extracted': 0,
                     'created_at': session.created_at.isoformat() if session.created_at else None,
                     'updated_at': session.updated_at.isoformat() if session.updated_at else None,
-                    'expires_at': session.expires_at.isoformat() if session.expires_at else None
+                    'last_activity_at': session.updated_at.isoformat() if session.updated_at else None
                 }
                 
                 # Remove None values to avoid issues
@@ -108,6 +88,9 @@ class SupabaseClient:
                 if result.data:
                     session_data = result.data[0]
                     # Add default values for missing fields to match model
+                    session_data.setdefault('framework_completion_percentage', 0.0)
+                    session_data.setdefault('conversation_turn_count', 0)
+                    session_data.setdefault('total_information_extracted', 0)
                     session_data.setdefault('persona_generated', False)
                     session_data.setdefault('website_scraped', False)
                     session_data.setdefault('awaiting_follow_up', False)
@@ -138,11 +121,13 @@ class SupabaseClient:
             try:
                 # Create a simplified session data dict that matches actual DB schema
                 session_data = {
-                    'current_question': session.current_question,
-                    'questions_completed': session.questions_completed,
                     'status': session.status,
                     'website_url': session.website_url,
-                    'updated_at': session.updated_at.isoformat() if session.updated_at else None
+                    'framework_completion_percentage': getattr(session, 'framework_completion_percentage', 0.0),
+                    'conversation_turn_count': getattr(session, 'conversation_turn_count', 0),
+                    'total_information_extracted': getattr(session, 'total_information_extracted', 0),
+                    'updated_at': session.updated_at.isoformat() if session.updated_at else None,
+                    'last_activity_at': session.updated_at.isoformat() if session.updated_at else None
                 }
                 
                 # Remove None values
@@ -175,17 +160,18 @@ class SupabaseClient:
                 message_data = {
                     'id': message.id,
                     'session_id': message.session_id,
-                    'role': message.role,
+                    'speaker': message.role,  # conversation_turns uses 'speaker' instead of 'role'
                     'content': message.content,
-                    'question_id': message.question_id,
-                    'metadata': message.metadata,
+                    'turn_number': getattr(message, 'turn_number', 1),  # Add turn number
+                    'turn_type': getattr(message, 'turn_type', 'conversation'),
+                    'framework_focus': getattr(message, 'framework_focus', None),
                     'created_at': message.timestamp.isoformat() if message.timestamp else None
                 }
                 
                 # Remove None values and fields that don't exist in DB
                 message_data = {k: v for k, v in message_data.items() if v is not None and k != 'agent_type'}
                 
-                result = self.client.table('chat_messages').insert(message_data).execute()
+                result = self.client.table('conversation_turns').insert(message_data).execute()
                 logger.debug(f"✅ Message created in database for session: {message.session_id}")
                 return message
             except Exception as e:
@@ -212,7 +198,7 @@ class SupabaseClient:
         """Get messages for a session."""
         if self.client:
             try:
-                query = self.client.table('chat_messages').select('*').eq('session_id', session_id).order('created_at')
+                query = self.client.table('conversation_turns').select('*').eq('session_id', session_id).order('created_at')
                 if limit:
                     query = query.limit(limit)
                 result = query.execute()
@@ -235,7 +221,7 @@ class SupabaseClient:
         """Clear messages for a session."""
         if self.client:
             try:
-                self.client.table('chat_messages').delete().eq('session_id', session_id).execute()
+                self.client.table('conversation_turns').delete().eq('session_id', session_id).execute()
                 logger.info(f"✅ Messages cleared from database for session: {session_id}")
             except Exception as e:
                 logger.error(f"❌ Failed to clear messages from database: {e}")
@@ -252,10 +238,12 @@ class SupabaseClient:
         """Log agent interaction."""
         if self.client:
             try:
+                # Try to log to usage_logs table, but don't fail if it doesn't exist
                 self.client.table('usage_logs').insert(log_entry).execute()
                 logger.debug(f"✅ Usage logged: {log_entry.get('agent_type', 'unknown')}")
             except Exception as e:
-                logger.error(f"❌ Failed to log usage: {e}")
+                # Don't log this as an error since usage_logs is optional
+                logger.debug(f"📝 Usage logging skipped (table may not exist): {log_entry.get('agent_type', 'unknown')}")
         else:
             # For simulation, just log it
             logger.info(f"📝 Agent interaction logged (simulation): {log_entry.get('agent_type', 'unknown')}")
@@ -276,7 +264,7 @@ class SupabaseClient:
         """Get total number of messages."""
         if self.client:
             try:
-                result = self.client.table('chat_messages').select('id', count='exact').execute()
+                result = self.client.table('conversation_turns').select('id', count='exact').execute()
                 return result.count or 0
             except Exception as e:
                 logger.error(f"❌ Failed to get message count: {e}")

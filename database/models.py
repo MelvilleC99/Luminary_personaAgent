@@ -66,21 +66,69 @@ class AssessmentRubric(BaseModel):
     follow_up_templates: Dict[str, str]
 
 
+class FrameworkExtraction(BaseModel):
+    """Model for extracted framework criteria."""
+    id: Optional[str] = None
+    session_id: str
+    framework_section: str
+    criteria_key: str
+    extracted_value: str
+    confidence_score: float = Field(ge=0.0, le=1.0)
+    reasoning: Optional[str] = None
+    extraction_method: str = "langgraph_agent"
+    extracted_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class SectionProgress(BaseModel):
+    """Model for tracking section completion progress."""
+    session_id: str
+    section_number: int
+    section_name: str
+    criteria_completed: List[str] = Field(default_factory=list)
+    criteria_missing: List[str] = Field(default_factory=list)
+    completion_percentage: float = 0.0
+    is_complete: bool = False
+    cross_section_data: Dict[str, Any] = Field(default_factory=dict)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ConversationState(BaseModel):
+    """Model for managing conversation state and memory."""
+    session_id: str
+    current_section: int = 1
+    total_sections: int = 6
+    section_progress: Dict[int, SectionProgress] = Field(default_factory=dict)
+    conversation_summary: str = ""
+    recent_context: List[str] = Field(default_factory=list)
+    token_count: int = 0
+    last_updated: datetime = Field(default_factory=datetime.utcnow)
+
+
 class PersonaSession(BaseModel):
     """Model for a persona building session."""
     id: str
     user_id: Optional[str] = None
     status: SessionStatus = SessionStatus.ACTIVE
     current_question: int = 1
+    completion_percentage: float = 0.0
     questions_completed: int = 0
+    # Framework progress tracking
+    framework_completion_percentage: float = 0.0
+    conversation_turn_count: int = 0
+    total_information_extracted: int = 0
     # Track follow-up state
     awaiting_follow_up: bool = False
     follow_up_attempts: int = 0
     website_url: Optional[str] = None
     website_scraped: bool = False
     persona_generated: bool = False
+    # Cost tracking
+    total_cost: float = 0.0
+    total_tokens: int = 0
+    total_api_calls: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    last_activity_at: datetime = Field(default_factory=datetime.utcnow)
     expires_at: Optional[datetime] = None
 
 

@@ -344,3 +344,119 @@ class SessionManager:
             await self.expire_session(session_id)
         
         logger.info(f"Cleaned up {len(expired_sessions)} expired sessions")
+    async def _cleanup_expired_in_db(self, current_time: datetime) -> None:
+        """Clean up expired sessions in database."""
+        try:
+            if self.database:
+                # This would update expired sessions in the database
+                # For now, just log the cleanup
+                logger.info("Cleaning up expired sessions in database")
+        except Exception as e:
+            logger.error(f"Failed to cleanup expired sessions in database: {e}")
+    
+    async def get_user_sessions(self, user_id: str, limit: int = 10) -> List[PersonaSession]:
+        """
+        Get sessions for a specific user.
+        
+        Args:
+            user_id: User identifier
+            limit: Maximum number of sessions to return
+            
+        Returns:
+            List of user sessions
+        """
+        try:
+            # Filter from active sessions cache
+            user_sessions = [
+                session for session in self.active_sessions.values()
+                if session.user_id == user_id
+            ]
+            
+            # Sort by creation time (newest first)
+            user_sessions.sort(key=lambda x: x.created_at, reverse=True)
+            
+            # Return limited results
+            return user_sessions[:limit]
+            
+        except Exception as e:
+            logger.error(f"Failed to get user sessions for {user_id}: {e}")
+            return []
+    
+    async def get_session_statistics(self) -> Dict[str, Any]:
+        """
+        Get statistics about current sessions.
+        
+        Returns:
+            Session statistics
+        """
+        try:
+            total_sessions = len(self.active_sessions)
+            
+            # Count by status
+            status_counts = {}
+            completion_percentages = []
+            
+            for session in self.active_sessions.values():
+                status = session.status.value
+                status_counts[status] = status_counts.get(status, 0) + 1
+                
+                completion = getattr(session, 'framework_completion_percentage', 0.0)
+                completion_percentages.append(completion)
+            
+            # Calculate average completion
+            avg_completion = sum(completion_percentages) / len(completion_percentages) if completion_percentages else 0.0
+            
+            return {
+                "total_active_sessions": total_sessions,
+                "status_distribution": status_counts,
+                "average_completion_percentage": round(avg_completion, 2),
+                "sessions_near_completion": len([c for c in completion_percentages if c >= 80]),
+                "sessions_just_started": len([c for c in completion_percentages if c < 20]),
+                "cache_size": total_sessions
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to get session statistics: {e}")
+            return {"error": str(e)}
+    
+    async def update_framework_progress(self, session_id: str, 
+                                      completion_percentage: float) -> Optional[PersonaSession]:
+        """
+        Update framework completion progress for a session.
+        
+        Args:
+            session_id: Session identifier
+            completion_percentage: Overall completion percentage (0-100)
+            
+        Returns:
+            Updated PersonaSession or None if not found
+        """
+        try:
+            session = await self.get_session(session_id)
+            if not session:
+                logger.warning(f"Session {session_id} not found for framework progress update")
+                return None
+            
+            # Update framework completion
+            session.framework_completion_percentage = completion_percentage
+            session.updated_at = datetime.utcnow()
+            
+            # Update status based on completion
+            if completion_percentage >= 100:
+                session.status = SessionStatus.COMPLETED
+            elif completion_percentage >= 80:
+                session.status = SessionStatus.ACTIVE  # Close to completion
+            
+            # Cache the updated session
+            self.active_sessions[session_id] = session
+            
+            # Save to database (non-blocking)
+            if self.database:
+                asyncio.create_task(self._update_session_in_db(session))
+            
+            logger.info(f"Updated framework progress for session {session_id}: {completion_percentage}%")
+            return session
+            
+        except Exception as e:
+            logger.error(f"Failed to update framework progress for session {session_id}: {e}")
+            return None

@@ -73,11 +73,27 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
+    """Health check endpoint with usage stats."""
     if coordinator is None:
         raise HTTPException(status_code=503, detail="Coordinator not initialized")
     
     health = await coordinator.health_check()
+    
+    # Add usage statistics
+    try:
+        from admin.usage_tracker import usage_tracker
+        usage_stats = usage_tracker.get_overall_stats()
+        health["usage"] = usage_stats
+        
+        # Display in terminal
+        print("\n--- System Health Check ---")
+        print(f"Status: {health.get('status', 'unknown')}")
+        usage_tracker.display_overall_stats()
+        print("-------------------------\n")
+        
+    except Exception as e:
+        logger.warning(f"Could not load usage stats: {e}")
+    
     return health
 
 
@@ -97,7 +113,7 @@ async def handle_query(request: QueryRequest):
     try:
         logger.info(f"🔄 Processing query: '{request.query[:100]}...'")
         
-        # If no session_id provided, start a new session
+        # If no session_id provided, start a new session AND process the user's input
         if not request.session_id:
             logger.info("🆕 Starting new session")
             session_result = await coordinator.start_session(
@@ -112,9 +128,23 @@ async def handle_query(request: QueryRequest):
                     error=session_result["error"]
                 )
             
+            # Process the user's actual input instead of returning canned message
+            session_id = session_result["session_id"]
+            logger.info(f"💬 Processing first input for new session: {session_id}")
+            result = await coordinator.process_user_input(session_id, request.query)
+            
+            if "error" in result:
+                logger.error(f"❌ Error processing input: {result['error']}")
+                return QueryResponse(
+                    aiResponse="Hello! I'm here to help you build your personal brand persona. What would you like to work on today?",
+                    sessionId=session_id,
+                    error=result["error"]
+                )
+            
             return QueryResponse(
-                aiResponse=session_result["message"],
-                sessionId=session_result["session_id"]
+                aiResponse=result["message"],
+                sessionId=session_id,
+                sessionEnded=result.get("session_ended", False)
             )
         
         # Process user input for existing session
@@ -132,6 +162,16 @@ async def handle_query(request: QueryRequest):
         # Determine if session is complete
         session_ended = result.get("status") in ["completed", "all_questions_completed"]
         
+        # Display session usage stats if session ended
+        if session_ended:
+            try:
+                from admin.usage_tracker import usage_tracker
+                print(f"\n--- Session Completed ---")
+                usage_tracker.display_session_stats(request.session_id)
+                print("------------------------\n")
+            except Exception:
+                pass  # Don't fail on display issues
+        
         return QueryResponse(
             aiResponse=result["message"],
             sessionId=request.session_id,
@@ -145,6 +185,24 @@ async def handle_query(request: QueryRequest):
             error=str(e),
             sessionId=request.session_id
         )
+
+
+@app.get("/api/session/{session_id}/progress")
+async def get_session_progress(session_id: str):
+    """Get detailed progress for a session."""
+    if coordinator is None:
+        raise HTTPException(status_code=503, detail="Coordinator not initialized")
+    
+    try:
+        # Get progress from the persona agent
+        if "persona_agent" in coordinator.agents:
+            progress = await coordinator.agents["persona_agent"].get_framework_progress(session_id)
+            return progress
+        else:
+            return {"error": "Persona agent not available"}
+    except Exception as e:
+        logger.error(f"Failed to get progress for session {session_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/session/start")

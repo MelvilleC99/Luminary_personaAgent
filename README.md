@@ -1,255 +1,260 @@
-# Luminary Persona Agent
+# Comprehensive LLM-Powered Persona Agent
 
-A sophisticated AI-powered persona building system that creates detailed psychological profiles through intelligent questioning and assessment. The system leverages multiple LLM providers to generate comprehensive persona insights through 30 carefully crafted questions.
+## Overview
 
-## Features
+This is a sophisticated conversational persona building system that extracts comprehensive brand persona information through natural conversation rather than rigid questionnaires. The system uses a single intelligent LLM agent to conduct natural conversations that systematically gather information across 6 framework sections with 60+ criteria.
 
-### 🧠 **Intelligent Persona Building**
-- 30 carefully crafted questions across 3 categories: Values & Beliefs, Goals & Aspirations, Communication & Decision-Making
-- Real-time assessment and scoring system
-- Context-aware follow-up questions based on previous responses
+## Architecture
 
-### 🤖 **Multi-LLM Support**
-- **OpenAI GPT-4o** (primary) - Fast and reliable
-- **Anthropic Claude** (fallback) - Deep reasoning capabilities  
-- **DeepSeek** (experimental) - Cost-effective alternative
-- Automatic failover between providers
+### Core Components
 
-### 🎨 **Modern Web Interface**
-- Clean, intuitive Streamlit-based UI
-- Real-time progress tracking
-- Session management with database persistence
-- Responsive design for all devices
+- **PersonaAgent**: Master conversational agent for persona building
+- **FrameworkAssessmentTool**: Comprehensive framework evaluation and next-step determination
+- **InformationExtractionTool**: Intelligent extraction of framework information from conversations
+- **Efficient Context Management**: Smart token management with recent detailed + older summarized
+- **Framework Criteria System**: 60+ information points across 6 sections
 
-### 🏗️ **Enterprise Architecture**
-- Modular agent-based design with BaseAgent interface
-- Comprehensive error handling and logging
-- Database integration with Supabase
-- RESTful API endpoints for integration
-- Rate limit optimization and context management
+### 6 Framework Sections
 
-## Quick Start
+1. **Core Expertise & Ideal Customer Profile (ICP)**
+   - Domain expertise, niche specialization, target audience, core problems, outcomes
 
-### Prerequisites
-- Python 3.9+ 
-- OpenAI API key
-- Supabase account (optional, for session persistence)
+2. **Brand Personality & Profile DNA**
+   - Brand personality, core values, reputation, formative stories, origin story
 
-### Installation
+3. **Positioning & Expertise**
+   - Elevator pitch, sweet spot audience, unique methods, services, contrarian beliefs
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/MelvilleC99/Luminary_agent.git
-cd Luminary_agent
-```
+4. **Voice, Style & Tone**
+   - Communication style, content approach, reference styles, signature phrases
 
-2. **Create virtual environment**
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+5. **Content Goals & Target Audience**
+   - Content objectives, audience struggles, desires, success stories, emotional impact
 
-3. **Install dependencies**
-```bash
-pip install -r requirements.txt
-```
+6. **Long-Term Vision & Success Metrics**
+   - Future vision, legacy aspirations, success signals, feelings of success
 
-4. **Set up environment variables**
-```bash
-cp .env.example .env
-# Edit .env with your API keys
-```
+## Key Features
 
-Required environment variables:
-```env
-OPENAI_API_KEY=your_openai_api_key
-ANTHROPIC_API_KEY=your_anthropic_api_key  # Optional
-SUPABASE_URL=your_supabase_url            # Optional
-SUPABASE_KEY=your_supabase_key            # Optional
-```
+### Conversational Intelligence
+- Natural conversation flow vs. rigid questionnaires
+- One response can fill multiple framework areas
+- Intelligent follow-up questions based on response quality
+- Context-aware transitions between framework sections
 
-### Running the Application
+### Efficient Token Management
+- Recent detailed context (last 8-10 exchanges ~3K tokens)
+- Older summarized context (~500 tokens)
+- Framework state tracking (separate from conversation)
+- Total target: ~4K tokens (vs 25K+ in naive approach)
 
-**Option 1: Streamlit Web Interface (Recommended)**
-```bash
-streamlit run ui/streamlit_app.py
-```
+### Intelligent Assessment
+- Framework-based evaluation vs. simple scoring
+- Confidence thresholds for each criteria
+- Contextual follow-up generation
+- Completion status tracking across all sections
 
-**Option 2: FastAPI Backend**
-```bash
-./start_api.sh
-# Or manually: uvicorn api.endpoints:app --reload
-```
-
-## System Architecture
+## File Structure
 
 ```
-luminary_persona_agent/
-├── agents/              # Core agent implementations
-│   ├── base/           # BaseAgent interface
-│   └── question_agent.py
-├── tools/              # LLM and assessment tools
-│   ├── llm_tool.py     # Multi-provider LLM interface
-│   └── assessment_tool.py
-├── database/           # Data persistence layer
-├── memory/             # Session and context management
-├── orchestrator/       # System coordination
-├── ui/                 # Streamlit web interface
-├── api/                # FastAPI endpoints
-├── prompts/            # System prompts and templates
-└── knowledge/          # Question database
+backend agent/
+├── agents/
+│   ├── persona_agent.py              # Master conversational agent
+│   ├── question_agent.py             # Legacy fallback (optional)
+│   └── base/
+│       └── agent_interface.py        # Base agent interface
+├── tools/
+│   ├── framework_assessment_tool.py  # Framework evaluation
+│   ├── information_extraction_tool.py # Extract framework info
+│   ├── assessment_tool.py            # Legacy assessment (fallback)
+│   └── llm_tool.py                   # LLM provider management
+├── knowledge/
+│   └── framework_criteria.yaml       # 60+ criteria definitions
+├── prompts/
+│   ├── persona_agent_prompt.txt      # Conversational system prompt
+│   └── question_agent_prompt.txt     # Legacy prompt (fallback)
+├── memory/
+│   ├── session_manager.py            # Enhanced session management
+│   └── context_manager.py            # Efficient context management
+├── orchestrator/
+│   └── coordinator.py                # Main orchestration logic
+├── database/
+│   ├── NEW_SCHEMA.md                 # Database schema documentation
+│   └── models.py                     # Database models
+└── api/
+    └── endpoints.py                  # API endpoints
 ```
 
-## Key Components
+## Database Schema
 
-### 🔧 **LLM Tool (`tools/llm_tool.py`)**
-- Multi-provider support with intelligent fallback
-- Optimized for GPT-4o with 60-second timeout
-- Comprehensive error handling and retry logic
-- Rate limit management
+### New Tables
+- `persona_sessions`: Enhanced session tracking with framework completion
+- `framework_state`: Tracks 60+ criteria completion per session
+- `conversation_turns`: Efficient conversation tracking with summarization
+- `information_extractions`: Detailed extraction tracking
+- `context_summaries`: Efficient context management
 
-### 🎯 **Assessment Tool (`tools/assessment_tool.py`)**
-- Context-aware assessment with truncation (200 chars)
-- Prompt size monitoring and optimization
-- Intelligent scoring system
-- Follow-up question generation
+### Token Efficiency Features
+- Smart summarization of older conversation turns
+- Context views for efficient loading
+- Framework state tracking separate from conversation
+- Optimized queries for minimal data transfer
 
-### 💾 **Database Integration**
-- Supabase integration for session persistence
-- Clean schema with user sessions and responses
-- Automatic session management
-- Optional offline mode
+## Usage
 
-### 🧩 **Agent Architecture**
-- BaseAgent interface for extensibility
-- Question Agent for persona building
-- Modular design for easy extension
-- Comprehensive logging throughout
-
-## Performance Optimizations
-
-### ✅ **Rate Limit Testing Results**
-- **Single requests**: ~1.75s average
-- **5 concurrent**: All successful in 1.96s
-- **10 concurrent**: All successful in 2.96s  
-- **20 concurrent**: All successful in 3.18s
-- **Zero rate limit errors** with production API keys
-
-### ⚡ **Context Management**
-- Q1→Q2 transitions: **3-4 seconds** (down from 60+ seconds)
-- Context truncation prevents API timeouts
-- Optimized prompt sizes with monitoring
-- Intelligent context bleeding prevention
-
-## Usage Examples
-
-### Basic Persona Building
+### Starting a Session
 ```python
-from agents.question_agent import QuestionAgent
-from tools.llm_tool import LLMTool
-
-# Initialize agent
-llm_tool = LLMTool()
-agent = QuestionAgent(llm_tool=llm_tool)
-
-# Start persona building session
-session_id = agent.start_session("user123")
-response = agent.process_question(session_id, "What motivates you?", "Making a positive impact")
+# Start conversational persona building
+response = await coordinator.start_session(user_id="user123")
+# Returns natural conversation opener
 ```
 
-### API Integration
+### Processing User Input
 ```python
-import requests
+# Process conversational input
+response = await coordinator.process_user_input(
+    session_id="session123",
+    user_input="I help manufacturing companies eliminate waste through lean methodologies..."
+)
+# Returns intelligent follow-up or transition
+```
 
-# Submit response via API
-response = requests.post("http://localhost:8000/submit_response", json={
-    "session_id": "session123",
-    "question_text": "What are your core values?", 
-    "user_response": "Integrity and compassion"
-})
+### Framework Progress
+```python
+# Get comprehensive framework progress
+progress = await coordinator.get_framework_progress(session_id="session123")
+# Returns completion status across all 6 sections
+```
+
+### Persona Generation
+```python
+# Generate final persona document
+persona = await coordinator.generate_persona_document(session_id="session123")
+# Returns comprehensive brand persona
+```
+
+## API Endpoints
+
+- `POST /start` - Start new conversational session
+- `POST /chat` - Process conversational input
+- `GET /progress/{session_id}` - Get framework progress
+- `GET /suggestions/{session_id}` - Get conversation suggestions
+- `POST /generate/{session_id}` - Generate final persona
+- `GET /health` - System health check
+
+## Configuration
+
+### Environment Variables
+```bash
+# Database
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_key
+
+# LLM Providers
+OPENAI_API_KEY=your_openai_key
+ANTHROPIC_API_KEY=your_anthropic_key
+
+# Session Management
+SESSION_TIMEOUT_HOURS=24
+MAX_CONTEXT_TURNS=10
+```
+
+### LLM Configuration
+```python
+llm_config = {
+    "persona_agent": "openai",
+    "information_extractor": "anthropic",
+    "framework_assessor": "openai"
+}
 ```
 
 ## Development
 
-### Running Tests
+### Setup
 ```bash
-pytest tests/
-```
-
-### Code Formatting
-```bash
-black . --line-length 88
-```
-
-### Development Setup
-```bash
-# Install development dependencies
+# Install dependencies
 pip install -r requirements.txt
 
-# Run with auto-reload
-streamlit run ui/streamlit_app.py --server.runOnSave true
+# Setup database
+python setup_database.py
+
+# Start API server
+bash start_api.sh
 ```
 
-## Configuration
+### Testing
+```bash
+# Test individual components
+python -m pytest tests/
 
-### LLM Provider Priority
-1. **OpenAI GPT-4o** (fastest, most reliable)
-2. **Anthropic Claude** (fallback for complex reasoning)
-3. **DeepSeek** (cost-effective backup)
+# Test conversation flow
+python test_conversation_flow.py
 
-### Timeouts and Limits
-- **OpenAI timeout**: 60 seconds
-- **Context truncation**: 200 characters
-- **Max prompt size**: 8000 characters (with fallback)
-- **Assessment warning**: 4000 characters
+# Test framework extraction
+python test_framework_extraction.py
+```
 
-## Troubleshooting
+## Migration from 30-Question System
 
-### Common Issues
+### What Changed
+- ❌ Removed: Fixed 30-question sequence
+- ❌ Removed: Simple 1-10 scoring system
+- ❌ Removed: Question-by-question progression
+- ✅ Added: Natural conversational flow
+- ✅ Added: Framework-based information extraction
+- ✅ Added: Intelligent context management
+- ✅ Added: Comprehensive persona generation
 
-**Q1→Q2 hanging (resolved)**
-- ✅ Fixed with context truncation
-- ✅ Optimized prompt sizes
-- ✅ Added timeout handling
+### Backward Compatibility
+- Legacy QuestionAgent available as fallback
+- Existing database tables preserved
+- API endpoints maintain compatibility
+- Gradual migration path available
 
-**Rate limits**
-- ✅ Tested up to 20 concurrent requests
-- ✅ Zero errors with production keys
-- ✅ Intelligent retry logic
+## Performance Optimizations
 
-**Database connectivity**
-- Check Supabase credentials in `.env`
-- Verify network connectivity
-- Falls back to memory-only mode if needed
+### Token Efficiency
+- 4K token target vs 25K+ naive approach
+- Smart context summarization
+- Framework state caching
+- Efficient database queries
 
-## Contributing
+### Response Time
+- Streamlined LLM calls
+- Parallel processing where possible
+- Intelligent caching strategies
+- Optimized database operations
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## Monitoring & Analytics
 
-## License
+### Key Metrics
+- Framework completion rates
+- Average conversation turns to completion
+- Token usage per session
+- User satisfaction scores
+- Persona quality assessments
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Health Checks
+- LLM provider availability
+- Database connectivity
+- Token usage monitoring
+- Session management health
 
-## Roadmap
+## Future Enhancements
 
-- [ ] Additional LLM providers (Gemini, Llama)
-- [ ] Voice input/output capabilities
-- [ ] Advanced persona analytics and insights
-- [ ] Multi-language support
-- [ ] Mobile app development
-- [ ] Enterprise SSO integration
+### Planned Features
+- Multi-language support
+- Voice interface integration
+- Advanced NLP for better extraction
+- Persona template marketplace
+- Integration with marketing tools
 
-## Support
-
-For issues and questions:
-- 📧 Email: support@luminairy.ai
-- 🐛 Issues: [GitHub Issues](https://github.com/MelvilleC99/Luminary_agent/issues)
-- 📖 Documentation: [Wiki](https://github.com/MelvilleC99/Luminary_agent/wiki)
+### Scalability
+- Horizontal scaling support
+- Advanced caching strategies
+- Queue-based processing
+- Real-time analytics dashboard
 
 ---
 
-**Built with ❤️ by the Luminary Team**
+**Note**: This system represents a significant evolution from question-based to conversation-based persona building, providing a more natural and comprehensive approach to brand persona development.

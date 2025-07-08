@@ -4,6 +4,7 @@ LLM Tool with multi-provider support for OpenAI, Anthropic, and DeepSeek.
 
 import asyncio
 import logging
+import time
 from typing import Dict, Any, Optional, List
 from abc import ABC, abstractmethod
 import openai
@@ -198,14 +199,26 @@ class LLMTool:
             self.providers["openai"] = OpenAIProvider(self.api_keys["openai"])
             logger.info("Initialized OpenAI provider with isolated connections")
         
-        if "anthropic" in self.api_keys and self.api_keys["anthropic"]:
-            self.providers["claude"] = AnthropicProvider(self.api_keys["anthropic"])
-            self.providers["anthropic"] = self.providers["claude"]  # Alias
-            logger.info("Initialized Anthropic provider")
+        # Only initialize Anthropic if we have a valid API key
+        if ("anthropic" in self.api_keys and 
+            self.api_keys["anthropic"] and 
+            len(self.api_keys["anthropic"].strip()) > 10):  # Valid API key check
+            try:
+                self.providers["claude"] = AnthropicProvider(self.api_keys["anthropic"])
+                self.providers["anthropic"] = self.providers["claude"]  # Alias
+                logger.info("Initialized Anthropic provider")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Anthropic provider: {e}")
         
-        if "deepseek" in self.api_keys and self.api_keys["deepseek"]:
-            self.providers["deepseek"] = DeepSeekProvider(self.api_keys["deepseek"])
-            logger.info("Initialized DeepSeek provider")
+        # Only initialize DeepSeek if we have a valid API key
+        if ("deepseek" in self.api_keys and 
+            self.api_keys["deepseek"] and 
+            len(self.api_keys["deepseek"].strip()) > 10):  # Valid API key check
+            try:
+                self.providers["deepseek"] = DeepSeekProvider(self.api_keys["deepseek"])
+                logger.info("Initialized DeepSeek provider")
+            except Exception as e:
+                logger.warning(f"Failed to initialize DeepSeek provider: {e}")
     
     async def generate_for_agent(self, agent_name: str, prompt: str, session_id: str = None, **kwargs) -> str:
         """
@@ -235,6 +248,15 @@ class LLMTool:
             result = await provider.generate(prompt, **kwargs)
             processing_time = int((time.time() - start_time) * 1000)  # Convert to milliseconds
             
+            # Calculate usage metrics
+            input_tokens = self._estimate_tokens(prompt)
+            output_tokens = self._estimate_tokens(result)
+            total_tokens = input_tokens + output_tokens
+            cost = self._calculate_cost(provider_name, getattr(provider, 'model', 'unknown'), input_tokens, output_tokens)
+            
+            # Terminal usage logging
+            print(f"LLM Usage: {provider_name} | {total_tokens} tokens | ${cost:.4f} | {processing_time}ms | {agent_name}")
+            
             # Log usage if database available - Non-blocking
             if self.database:
                 # Fire-and-forget database logging to prevent blocking
@@ -244,8 +266,8 @@ class LLMTool:
                     action="generate",
                     provider=provider_name,
                     model=getattr(provider, 'model', 'unknown'),
-                    input_tokens=self._estimate_tokens(prompt),
-                    output_tokens=self._estimate_tokens(result),
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
                     processing_time_ms=processing_time,
                     success=True
                 ))
@@ -254,6 +276,9 @@ class LLMTool:
             
         except Exception as e:
             processing_time = int((time.time() - start_time) * 1000)
+            
+            # Terminal error logging
+            print(f"LLM Error: {provider_name} | {processing_time}ms | {agent_name} | {str(e)[:100]}")
             
             # Log error if database available - Non-blocking
             if self.database:
@@ -271,13 +296,15 @@ class LLMTool:
             
             raise
     
-    async def chat_for_agent(self, agent_name: str, messages: List[Dict[str, str]], **kwargs) -> str:
+    async def chat_for_agent(self, agent_name: str, messages: List[Dict[str, str]], 
+                           session_id: str = "unknown", **kwargs) -> str:
         """
         Generate chat response for a specific agent using its assigned LLM.
         
         Args:
             agent_name: Name of the agent requesting generation
             messages: Conversation messages
+            session_id: Session ID for logging
             **kwargs: Additional generation parameters
             
         Returns:
@@ -290,7 +317,57 @@ class LLMTool:
             raise ValueError(f"No provider available for {provider_name}")
         
         logger.info(f"Chat generation for {agent_name} using {provider_name}")
-        return await provider.chat(messages, **kwargs)
+        
+        start_time = time.time()
+        try:
+            result = await provider.chat(messages, **kwargs)
+            processing_time = int((time.time() - start_time) * 1000)
+            
+            # Calculate usage metrics  
+            input_tokens = sum(self._estimate_tokens(msg.get('content', '')) for msg in messages)
+            output_tokens = self._estimate_tokens(result)
+            total_tokens = input_tokens + output_tokens
+            cost = self._calculate_cost(provider_name, getattr(provider, 'model', 'unknown'), input_tokens, output_tokens)
+            
+            # Terminal usage logging
+            print(f"LLM Chat: {provider_name} | {total_tokens} tokens | ${cost:.4f} | {processing_time}ms | {agent_name}")
+            
+            # Log usage if database available - Non-blocking
+            if self.database:
+                asyncio.create_task(self._log_usage(
+                    session_id=session_id,
+                    agent_type=agent_name,
+                    action="chat",
+                    provider=provider_name,
+                    model=getattr(provider, 'model', 'unknown'),
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    processing_time_ms=processing_time,
+                    success=True
+                ))
+            
+            return result
+            
+        except Exception as e:
+            processing_time = int((time.time() - start_time) * 1000)
+            
+            # Terminal error logging
+            print(f"LLM Chat Error: {provider_name} | {processing_time}ms | {agent_name} | {str(e)[:100]}")
+            
+            # Log error if database available - Non-blocking
+            if self.database:
+                asyncio.create_task(self._log_usage(
+                    session_id=session_id,
+                    agent_type=agent_name,
+                    action="chat", 
+                    provider=provider_name,
+                    model=getattr(provider, 'model', 'unknown'),
+                    processing_time_ms=processing_time,
+                    success=False,
+                    error_message=str(e)
+                ))
+            
+            raise
     
     def get_available_providers(self) -> List[str]:
         """Return list of available providers."""

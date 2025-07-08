@@ -1,0 +1,218 @@
+# Comprehensive Framework Criteria for Persona Agent
+# 60+ information points across 6 framework sections
+
+framework_sections:
+  
+  "Core Expertise & Ideal Customer Profile (ICP)":
+    section_name: "Core Expertise & Ideal Customer Profile (ICP)"
+    description: "Foundational expertise and target customer definition"
+    criteria:
+      broad_expertise:
+        description: "Domain-level expertise area"
+        required_elements:
+          - "Specific industry or field mentioned"
+          - "Clear professional domain"
+        sufficient_indicators:
+          - "Could speak on topic for hours"
+          - "Recognized expertise area"
+          - "Not generic business terms"
+        examples:
+          good: ["Manufacturing efficiency", "B2B sales", "Executive coaching", "AI and automation"]
+          bad: ["Business", "Helping people", "Consulting", "Marketing"]
+        confidence_threshold: 0.7
+        conversation_starters:
+          - "What's a broad topic you could speak on for hours?"
+          - "What field do you have deep expertise in?"
+      
+      niche_expertise:
+        description: "Specific specialization within domain"
+        required_elements:
+          - "Detailed specialization mentioned"
+          - "Unique angle or approach"
+        sufficient_indicators:
+          - "Specific methodology mentioned"
+          - "Particular problem focus"
+          - "Differentiating factor"
+        examples:
+          good: ["AI agent identification and business case development", "Lean manufacturing for automotive", "Content strategy for B2B SaaS"]
+          bad: ["Operations", "Marketing", "Strategy", "Coaching"]
+        confidence_threshold: 0.7
+        conversation_starters:
+          - "What's your specific specialization within that domain?"
+          - "What's your unique angle on this topic?"
+      
+      target_audience:
+        description: "Specific audience served (industry, role, size)"
+        required_elements:
+          - "Specific industry or sector"
+          - "Role or position level"
+          - "Company size or type"
+        sufficient_indicators:
+          - "Decision-maker identification"
+          - "Specific demographic details"
+          - "Pain point alignment"
+        examples:
+          good: ["CTOs at mid-size tech companies", "Operations managers in manufacturing", "Marketing directors at B2B SaaS startups"]
+          bad: ["Business owners", "Everyone", "Small businesses", "People"]
+        confidence_threshold: 0.8
+        conversation_starters:
+          - "Who is your ideal client? (industry, role, size)"
+          - "What type of person makes the decision to hire you?"
+      
+      core_problem:
+        description: "Primary problem solved"
+        required_elements:
+          - "Specific problem statement"
+          - "Impact or consequence mentioned"
+        sufficient_indicators:
+          - "Problem urgency indicated"
+          - "Cost of not solving mentioned"
+          - "Measurable impact described"
+        examples:
+          good: ["Companies missing automation opportunities costing them efficiency", "Manual processes causing delays and errors"]
+          bad: ["They need help", "Business problems", "Growth challenges"]
+        confidence_threshold: 0.8
+        conversation_starters:
+          - "What's the #1 pain point you solve?"
+          - "What problem keeps your ideal clients up at night?"
+      
+      clear_outcome:
+        description: "Tangible results delivered"
+        required_elements:
+          - "Specific measurable outcome"
+          - "Timeframe mentioned"
+        sufficient_indicators:
+          - "Quantifiable results"
+          - "Before/after comparison"
+          - "Success metrics defined"
+        examples:
+          good: ["Identify 3-5 automation opportunities within 30 days", "Reduce manual work by 40% through agent implementation"]
+          bad: ["Better results", "Improved performance", "Growth"]
+        confidence_threshold: 0.8
+        conversation_starters:
+          - "What specific results do clients get?"
+          - "How do you measure success?"
+
+  "Brand Personality & Profile DNA":
+    section_name: "Brand Personality & Profile DNA"
+    description: "Core personality traits and values that define the brand"
+    criteria:
+      brand_personality:
+        description: "How brand would be described as a person"
+        required_elements:
+          - "Personality traits mentioned"
+          - "Communication style described"
+        sufficient_indicators:
+          - "Distinct personality characteristics"
+          - "Relatable human qualities"
+        examples:
+          good: ["Analytical problem-solver who gets excited about finding inefficiencies", "Tech-savvy consultant who explains complex concepts simply"]
+          bad: ["Professional", "Helpful", "Expert", "Good"]
+        confidence_threshold: 0.7
+        conversation_starters:
+          - "If your brand was a person, how would you describe it?"
+          - "What personality traits define your brand?"
+      
+      core_values:
+        description: "2-3 values that guide work"
+        required_elements:
+          - "Specific values named"
+          - "Application to work described"
+        sufficient_indicators:
+          - "Values influence decisions"
+          - "Clear priority hierarchy"
+        examples:
+          good: ["Efficiency - never accept 'that's how we've always done it'", "Transparency - show exactly how automation will impact the business"]
+          bad: ["Quality", "Service", "Trust", "Growth"]
+        confidence_threshold: 0.8
+        conversation_starters:
+          - "What 2-3 core values guide how you work?"
+          - "What principles do you never compromise on?"
+      
+      unique_approach:
+        description: "What makes their method different"
+        required_elements:
+          - "Specific methodology or framework"
+          - "Differentiation from competitors"
+        sufficient_indicators:
+          - "Proprietary approach"
+          - "Unique angle or perspective"
+        examples:
+          good: ["The AI Opportunity Audit Framework", "Business-first approach to automation (not tech-first)"]
+          bad: ["Good process", "Proven methods", "Best practices"]
+        confidence_threshold: 0.7
+        conversation_starters:
+          - "How is your method different from others?"
+          - "What's your unique approach?"
+
+  "Communication Style & Voice":
+    section_name: "Communication Style & Voice"
+    description: "How they communicate and their brand voice"
+    criteria:
+      communication_style:
+        description: "Natural communication approach"
+        required_elements:
+          - "Specific style descriptors"
+          - "Tone characteristics"
+        sufficient_indicators:
+          - "Distinct voice qualities"
+          - "Communication preferences"
+        examples:
+          good: ["Direct and analytical - I explain the business case with data", "Practical and down-to-earth - I focus on real-world implementation"]
+          bad: ["Professional", "Friendly", "Clear", "Good"]
+        confidence_threshold: 0.7
+        conversation_starters:
+          - "How would you describe your communication style?"
+          - "What's your natural way of explaining things?"
+      
+      content_approach:
+        description: "How they share knowledge and insights"
+        required_elements:
+          - "Content philosophy described"
+          - "Approach to sharing ideas"
+        sufficient_indicators:
+          - "Clear content strategy"
+          - "Preferred content types"
+        examples:
+          good: ["Focus on practical case studies and ROI examples", "Break down complex AI concepts into business terms"]
+          bad: ["Share good content", "Try to help", "Post regularly"]
+        confidence_threshold: 0.7
+        conversation_starters:
+          - "How do you like to share your expertise?"
+          - "What's your approach to content?"
+
+# Assessment Thresholds - Made more conservative
+assessment_thresholds:
+  minimum_confidence: 0.6
+  sufficient_confidence: 0.7
+  excellent_confidence: 0.9
+  
+  section_completion_threshold: 0.8  # Higher threshold
+  overall_completion_threshold: 0.9  # Much higher - need 90% to complete
+  
+  max_follow_up_attempts: 3
+  context_window_turns: 10
+
+# Conversation Flow Patterns
+conversation_patterns:
+  opening_strategies:
+    - "What's something you could talk about for hours?"
+    - "If I asked your best client what you're known for, what would they say?"
+    - "What problem do you solve that keeps people up at night?"
+  
+  transition_phrases:
+    - "That's fascinating - it sounds like..."
+    - "I can see why that would be important. Now I'm curious about..."
+    - "Perfect, that gives me a clear picture of... Let me dig into..."
+  
+  confirmation_patterns:
+    - "Let me make sure I understand..."
+    - "So if I'm hearing you correctly..."
+    - "Just to confirm, you're saying..."
+  
+  depth_seeking:
+    - "Can you give me a specific example of that?"
+    - "What does that look like in practice?"
+    - "Tell me more about how that works..."
+    - "Who specifically do you help with this?"
+    - "What results do your clients typically see?"

@@ -141,6 +141,31 @@ class UsageTracker:
             "avg_questions_per_session": sum(s.get("questions_completed", 0) 
                                            for s in self.usage_data["sessions"].values()) / max(total_sessions, 1)
         }
+    
+    def display_session_stats(self, session_id: str):
+        """Display session stats in terminal."""
+        stats = self.get_session_stats(session_id)
+        if stats["session_info"]:
+            print(f"Session Stats [{session_id[:8]}...]:")
+            print(f"  API Calls: {stats['api_calls_count']}")
+            print(f"  Total Tokens: {stats['total_tokens']:,}")
+            print(f"  Total Cost: ${stats['total_cost']:.4f}")
+            print(f"  Avg Response Time: {stats['avg_response_time']:.0f}ms")
+    
+    def display_overall_stats(self):
+        """Display overall system stats in terminal."""
+        stats = self.get_overall_stats()
+        print("System Usage Summary:")
+        print(f"  Total Sessions: {stats['total_sessions']}")
+        print(f"  Total API Calls: {stats['total_api_calls']}")
+        print(f"  Total Cost: ${stats['total_cost']:.4f}")
+        print(f"  Avg Questions/Session: {stats['avg_questions_per_session']:.1f}")
+        if stats['cost_by_provider']:
+            print("  Cost by Provider:")
+            for provider, cost in stats['cost_by_provider'].items():
+                print(f"    {provider}: ${cost:.4f}")
+        if stats['total_errors'] > 0:
+            print(f"  Total Errors: {stats['total_errors']}")
 
 
 # Global usage tracker
