@@ -8,8 +8,7 @@ import time
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 
-from memory.session_manager import SessionManager
-from memory.context_manager import ContextManager
+from memory.redis_context_manager import RedisContextManager
 from tools.llm_tool import LLMTool
 from database.models import PersonaSession, SessionStatus, AgentType
 from orchestrator.config import settings
@@ -39,13 +38,6 @@ class PersonaCoordinator:
         
         self.database = database
         
-        # Initialize core components with lazy imports to avoid circular dependencies
-        from memory.session_manager import SessionManager
-        from memory.context_manager import ContextManager
-        
-        self.session_manager = SessionManager(database)
-        self.context_manager = ContextManager(database)
-        
         # Initialize LLM tool with multi-provider support and database
         self.llm_tool = LLMTool(
             api_keys=settings.api_keys,
@@ -53,10 +45,26 @@ class PersonaCoordinator:
             database=database
         )
         
+        # Initialize Redis context manager
+        self.redis_context_manager = RedisContextManager(
+            redis_url=settings.redis_url,
+            database=database,
+            llm_tool=self.llm_tool,
+            max_token_limit=settings.max_context_tokens,
+            recent_message_limit=settings.recent_message_limit
+        )
+        
+        # Initialize enhanced session manager with Redis support
+        from memory.managers.session_manager import SessionManager
+        self.session_manager = SessionManager(
+            redis_context_manager=self.redis_context_manager,
+            database=database
+        )
+        
         # Agent registry - will be populated as agents are initialized
         self.agents = {}
         
-        # Initialize Question Agent
+        # Initialize agents
         self._initialize_agents()
         
         # Task queue for managing agent workload
@@ -95,30 +103,33 @@ class PersonaCoordinator:
             if website_url:
                 await self.session_manager.set_website_url(session.id, website_url)
             
-            # Add welcome system message
-            await self.context_manager.add_system_message(
-                session.id,
-                "Welcome to the Luminary Persona Agent! I'll guide you through 30 questions to build your comprehensive marketing persona."
-            )
-            
-            # Start conversation using Persona Agent
+            # Start conversation using Persona Agent (no conflicting system message)
             if "persona_agent" in self.agents:
                 response = await self.agents["persona_agent"].start_conversation(session.id)
+                
+                return {
+                    "session_id": session.id,
+                    "status": response.get("status", "started"),
+                    "message": response.get("message", ""),
+                    "conversation_type": response.get("conversation_type", "persona_building"),
+                    "completion_percentage": response.get("completion_percentage", 0.0),
+                    "conversation_stage": response.get("conversation_stage", "initial_greeting"),
+                    "progress": await self.session_manager.get_session_progress(session.id)
+                }
             else:
                 # Fallback to basic conversation
-                response = {
+                fallback_message = "Welcome! I'm excited to help you build a comprehensive brand persona. What's something about your business that you could talk about for hours?"
+                
+                return {
+                    "session_id": session.id,
                     "status": "conversation_started",
-                    "message": "Welcome! I'm excited to help you build a comprehensive brand persona. What's something about your business that you could talk about for hours?",
-                    "conversation_type": "persona_building"
+                    "message": fallback_message,
+                    "conversation_type": "persona_building",
+                    "completion_percentage": 0.0,
+                    "progress": await self.session_manager.get_session_progress(session.id)
                 }
             
             logger.info(f"Started new session: {session.id}")
-            
-            return {
-                "session_id": session.id,
-                "status": "started",
-                "progress": await self.session_manager.get_session_progress(session.id)
-            }
             
         except Exception as e:
             logger.error(f"Failed to start session: {e}")
@@ -126,13 +137,13 @@ class PersonaCoordinator:
     
     async def resume_session(self, session_id: str) -> Dict[str, Any]:
         """
-        Resume an existing session.
+        Resume an existing conversational session.
         
         Args:
             session_id: Session identifier
             
         Returns:
-            Session status and next action
+            Session status and continuation prompt
         """
         try:
             session = await self.session_manager.get_session(session_id)
@@ -148,8 +159,8 @@ class PersonaCoordinator:
                 return {
                     "session_id": session_id,
                     "status": "completed",
-                    "message": "Your persona building session is complete!",
-                    "progress": await self.session_manager.get_session_progress(session_id)
+                    "message": "Your persona building session is complete! Your comprehensive brand persona has been generated.",
+                    "framework_progress": await self._get_framework_progress(session_id)
                 }
             
             # Get continuation prompt based on current progress
@@ -180,30 +191,24 @@ class PersonaCoordinator:
     
     async def process_user_input(self, session_id: str, user_input: str) -> Dict[str, Any]:
         """
-        Process user input and coordinate the appropriate response.
+        Process user input through conversational persona building.
         
         Args:
             session_id: Session identifier
-            user_input: User's input/answer
+            user_input: User's conversational input
             
         Returns:
-            Response from the appropriate agent
+            Response from the persona agent
         """
         start_time = time.time()
-        logger.info(f"🎯 Processing input for session {session_id}: '{user_input[:50]}...'")
+        logger.info(f"🎯 Processing conversational input for session {session_id}: '{user_input[:50]}...'")
         
         try:
             session = await self.session_manager.get_session(session_id)
             if not session:
                 return {"error": "Session not found", "status": "not_found"}
             
-            logger.info(f"📋 Session found - Current question: {session.current_question}")
-            
-            # Add user message to context
-            await self.context_manager.add_user_message(
-                session_id, user_input, session.current_question
-            )
-            logger.info("💬 Added user message to context")
+            logger.info(f"📋 Session found - Status: {session.status}")
             
             # Route to persona agent for conversational processing
             if "persona_agent" in self.agents:
@@ -369,146 +374,6 @@ class PersonaCoordinator:
                 for i in range(1, 31)
             ]
     
-    async def get_session_status(self, session_id: str) -> Dict[str, Any]:
-        """
-        Get comprehensive session status.
-        
-        Args:
-            session_id: Session identifier
-            
-        Returns:
-            Complete session status
-        """
-        try:
-            session = await self.session_manager.get_session(session_id)
-            if not session:
-                return {"error": "Session not found"}
-            
-            progress = await self.session_manager.get_session_progress(session_id)
-            context_summary = await self.context_manager.get_context_summary(session_id)
-            
-            return {
-                "session": session.dict(),
-                "progress": progress,
-                "context_summary": context_summary,
-                "available_agents": list(self.agents.keys()),
-                "llm_providers": self.llm_tool.get_available_providers()
-            }
-            
-        except Exception as e:
-            logger.error(f"Failed to get session status {session_id}: {e}")
-            return {"error": str(e)}
-    
-    async def health_check(self) -> Dict[str, Any]:
-        """
-        Perform a health check on all components.
-        
-        Returns:
-            Health status of all components
-        """
-        health = {
-            "coordinator": "healthy",
-            "session_manager": "healthy",
-            "context_manager": "healthy",
-            "llm_tool": {
-                "status": "healthy",
-                "providers": self.llm_tool.get_available_providers()
-            },
-            "agents": {name: "healthy" for name in self.agents.keys()},
-            "database": "not_implemented" if not self.database else "healthy"
-        }
-        
-        return health
-    
-    def _initialize_agents(self):
-        """Initialize agents with proper dependencies."""
-        try:
-            from agents.persona_agent import PersonaAgent
-            
-            persona_agent = PersonaAgent(
-                llm_tool=self.llm_tool,
-                session_manager=self.session_manager,
-                context_manager=self.context_manager,
-                database=self.database
-            )
-            
-            self.register_agent("persona_agent", persona_agent)
-            logger.info("Persona agent initialized successfully")
-            
-        except Exception as e:
-            logger.error(f"Failed to initialize persona agent: {e}")
-            
-        # Keep question agent as fallback (optional)
-        try:
-            from agents.question_agent import QuestionAgent
-            
-            question_agent = QuestionAgent(
-                llm_tool=self.llm_tool,
-                session_manager=self.session_manager,
-                context_manager=self.context_manager,
-                database=self.database
-            )
-            
-            self.register_agent("question_agent_fallback", question_agent)
-            logger.info("Question agent registered as fallback")
-            
-        except Exception as e:
-            logger.warning(f"Question agent fallback not available: {e}")
-    
-    async def resume_session(self, session_id: str) -> Dict[str, Any]:
-        """
-        Resume an existing conversational session.
-        
-        Args:
-            session_id: Session identifier
-            
-        Returns:
-            Session status and continuation prompt
-        """
-        try:
-            session = await self.session_manager.get_session(session_id)
-            if not session:
-                return {"error": "Session not found", "status": "not_found"}
-            
-            # Resume if paused
-            if session.status == SessionStatus.PAUSED:
-                session = await self.session_manager.resume_session(session_id)
-            
-            # Check if session is completed
-            if session.status == SessionStatus.COMPLETED:
-                return {
-                    "session_id": session_id,
-                    "status": "completed",
-                    "message": "Your persona building session is complete! Your comprehensive brand persona has been generated.",
-                    "framework_progress": await self._get_framework_progress(session_id)
-                }
-            
-            # Get continuation prompt based on current progress
-            if "persona_agent" in self.agents:
-                # Get current framework progress
-                progress = await self.agents["persona_agent"].get_framework_progress(session_id)
-                
-                # Generate continuation message
-                continuation_message = await self._generate_continuation_message(progress)
-                
-                return {
-                    "session_id": session_id,
-                    "status": "resumed",
-                    "message": continuation_message,
-                    "framework_progress": progress
-                }
-            else:
-                return {
-                    "session_id": session_id,
-                    "status": "resumed",
-                    "message": "Let's continue building your brand persona. What would you like to explore next?",
-                    "framework_progress": await self._get_framework_progress(session_id)
-                }
-            
-        except Exception as e:
-            logger.error(f"Failed to resume session {session_id}: {e}")
-            return {"error": str(e), "status": "failed"}
-    
     async def _generate_continuation_message(self, progress: Dict[str, Any]) -> str:
         """Generate continuation message based on current progress."""
         
@@ -523,55 +388,6 @@ class PersonaCoordinator:
             return "Welcome back! We're making excellent progress on your persona. Let's finish gathering the remaining insights."
         else:
             return "Welcome back! Your persona is nearly complete. Let's wrap up the final details and generate your comprehensive brand persona."
-    
-    async def process_user_input(self, session_id: str, user_input: str) -> Dict[str, Any]:
-        """
-        Process user input through conversational persona building.
-        
-        Args:
-            session_id: Session identifier
-            user_input: User's conversational input
-            
-        Returns:
-            Response from the persona agent
-        """
-        start_time = time.time()
-        logger.info(f"🎯 Processing conversational input for session {session_id}: '{user_input[:50]}...'")
-        
-        try:
-            session = await self.session_manager.get_session(session_id)
-            if not session:
-                return {"error": "Session not found", "status": "not_found"}
-            
-            logger.info(f"📋 Session found - Status: {session.status}")
-            
-            # Route to persona agent for conversational processing
-            if "persona_agent" in self.agents:
-                logger.info("🤖 Routing to persona agent...")
-                agent_start = time.time()
-                
-                response = await self.agents["persona_agent"].process(session_id, user_input)
-                
-                agent_time = time.time() - agent_start
-                logger.info(f"✅ Persona agent completed in {agent_time:.2f}s")
-                
-                # Update session status if needed
-                if response.get("status") == "completion":
-                    await self.session_manager.mark_persona_generated(session_id)
-                
-            else:
-                logger.warning("⚠️ Persona agent not available, using fallback")
-                response = await self._basic_conversational_processing(session_id, user_input)
-            
-            total_time = time.time() - start_time
-            logger.info(f"🏁 Total processing time: {total_time:.2f}s")
-            
-            return response
-            
-        except Exception as e:
-            total_time = time.time() - start_time
-            logger.error(f"❌ Failed to process input for session {session_id} after {total_time:.2f}s: {e}")
-            return {"error": str(e), "status": "failed"}
     
     async def _basic_conversational_processing(self, session_id: str, user_input: str) -> Dict[str, Any]:
         """Basic conversational processing when persona agent is not available."""
@@ -652,14 +468,14 @@ class PersonaCoordinator:
         health = {
             "coordinator": "healthy",
             "session_manager": "healthy",
-            "context_manager": "healthy",
+            "redis_context_manager": "healthy" if self.redis_context_manager._redis_connected else "disconnected",
             "llm_tool": {
                 "status": "healthy",
                 "providers": self.llm_tool.get_available_providers()
             },
             "agents": {name: "healthy" for name in self.agents.keys()},
             "database": "not_implemented" if not self.database else "healthy",
-            "architecture": "conversational_persona_building"
+            "architecture": "conversational_persona_building_with_redis"
         }
         
         return health
@@ -667,50 +483,18 @@ class PersonaCoordinator:
     def _initialize_agents(self):
         """Initialize agents with proper dependencies."""
         try:
+            # Use the modular LangGraph agent (the new one)
             from agents.modular_langgraph_persona_agent import ModularLangGraphPersonaAgent
-            
+
             persona_agent = ModularLangGraphPersonaAgent(
                 llm_tool=self.llm_tool,
                 session_manager=self.session_manager,
-                context_manager=self.context_manager,
+                context_manager=self.redis_context_manager,
                 database=self.database
             )
-            
+
             self.register_agent("persona_agent", persona_agent)
-            logger.info("Modular LangGraph Persona agent initialized successfully")
-            
+            logger.info("✅ Modular LangGraph Persona agent initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize modular LangGraph persona agent: {e}")
-            # Fallback to original LangGraph agent
-            try:
-                from agents.langgraph_persona_agent import LangGraphPersonaAgent
-                
-                persona_agent = LangGraphPersonaAgent(
-                    llm_tool=self.llm_tool,
-                    session_manager=self.session_manager,
-                    context_manager=self.context_manager,
-                    database=self.database
-                )
-                
-                self.register_agent("persona_agent", persona_agent)
-                logger.info("Fallback to original LangGraph persona agent")
-                
-            except Exception as e2:
-                logger.error(f"Failed to initialize original LangGraph agent: {e2}")
-                # Final fallback to old persona agent
-                try:
-                    from agents.persona_agent import PersonaAgent
-                    
-                    persona_agent = PersonaAgent(
-                        llm_tool=self.llm_tool,
-                        session_manager=self.session_manager,
-                        context_manager=self.context_manager,
-                        database=self.database
-                    )
-                    
-                    self.register_agent("persona_agent", persona_agent)
-                    logger.info("Final fallback to original persona agent")
-                    
-                except Exception as fallback_error:
-                    logger.error(f"Failed to initialize fallback persona agent: {fallback_error}")
-                    logger.error("No persona agent available - system may not function properly")
+            raise Exception("Unable to initialize persona agent")

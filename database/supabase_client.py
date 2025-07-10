@@ -256,9 +256,9 @@ class SupabaseClient:
                 return result.count or 0
             except Exception as e:
                 logger.error(f"❌ Failed to get session count: {e}")
-                return len(self._sessions)
+                return len(getattr(self, '_sessions', {}))
         else:
-            return len(self._sessions)
+            return len(getattr(self, '_sessions', {}))
     
     def get_message_count(self) -> int:
         """Get total number of messages."""
@@ -268,6 +268,6 @@ class SupabaseClient:
                 return result.count or 0
             except Exception as e:
                 logger.error(f"❌ Failed to get message count: {e}")
-                return sum(len(messages) for messages in self._messages.values())
+                return sum(len(messages) for messages in getattr(self, '_messages', {}).values())
         else:
-            return sum(len(messages) for messages in self._messages.values())
+            return sum(len(messages) for messages in getattr(self, '_messages', {}).values())

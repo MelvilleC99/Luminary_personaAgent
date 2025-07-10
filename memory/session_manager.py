@@ -125,7 +125,8 @@ class SessionManager:
     async def _update_session_in_db(self, session: PersonaSession):
         """Background task for database updates."""
         try:
-            await self.database.update_session(session)
+            if self.database and hasattr(self.database, 'update_session'):
+                await self.database.update_session(session)
         except Exception as e:
             logger.error(f"Background database update failed for session {session.id}: {e}")
     

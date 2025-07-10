@@ -1,5 +1,6 @@
 """
-Enhanced Context Manager with LangChain memory integration.
+Enhanced Context Manager - Legacy Implementation.
+This is kept for backward compatibility while transitioning to Redis-based system.
 """
 
 import asyncio
@@ -20,8 +21,10 @@ logger = logging.getLogger(__name__)
 
 class EnhancedContextManager:
     """
-    Enhanced context manager with intelligent summarization and token management.
-    Uses LangChain memory for efficient context window management.
+    Legacy Enhanced context manager with LangChain memory integration.
+    
+    Note: This is being replaced by RedisContextManager for better performance.
+    Use RedisContextManager for new implementations.
     """
     
     def __init__(self, database: SupabaseClient, llm_tool=None):
@@ -41,6 +44,8 @@ class EnhancedContextManager:
         self.max_tokens = 4000  # Conservative limit for context
         self.recent_message_limit = 6  # Keep last 6 messages in full detail
         
+        logger.warning("Using legacy EnhancedContextManager - consider migrating to RedisContextManager")
+    
     def _get_or_create_memory(self, session_id: str):
         """Get or create memory instance for session (simplified)."""
         if session_id not in self.memory_instances:

@@ -11,6 +11,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 import instructor
 
 from .models import PersonaConversationState, UserIntent, ConversationResponse, ExtractionItem
+from .section_flow_manager import SectionFlowManager
 from database.models import FrameworkExtraction
 
 logger = logging.getLogger(__name__)
@@ -22,6 +23,12 @@ class WorkflowNodes:
     def __init__(self, llm_tool, framework_criteria):
         self.llm_tool = llm_tool
         self.framework_criteria = framework_criteria
+        
+        # Initialize section flow manager
+        self.section_flow_manager = SectionFlowManager(framework_criteria)
+        
+        # Load system prompt
+        self.system_prompt = self._load_system_prompt()
         
         # Initialize instructor client for structured responses
         try:
@@ -40,230 +47,298 @@ class WorkflowNodes:
             logger.warning(f"Could not initialize instructor client: {e}")
             self.instructor_client = None
     
+    def _load_system_prompt(self) -> str:
+        """Load the system prompt from file."""
+        try:
+            from pathlib import Path
+            prompt_path = Path(__file__).parent.parent.parent / "prompts" / "persona_agent_prompt.txt"
+            
+            if prompt_path.exists():
+                with open(prompt_path, 'r') as f:
+                    system_prompt = f.read().strip()
+                logger.info(f"✅ Loaded system prompt ({len(system_prompt)} characters)")
+                return system_prompt
+            else:
+                logger.error(f"❌ System prompt file not found: {prompt_path}")
+                return self._get_fallback_system_prompt()
+        except Exception as e:
+            logger.error(f"❌ Failed to load system prompt: {e}")
+            return self._get_fallback_system_prompt()
+    
+    def _get_fallback_system_prompt(self) -> str:
+        """Fallback system prompt if file can't be loaded."""
+        return """You are Paul, an expert brand strategist conducting a comprehensive persona interview through natural, flowing conversation.
+
+Your mission is to extract comprehensive brand persona information across 6 framework sections through intelligent conversation, not rigid questionnaires.
+
+Be conversational, acknowledge what they share, build on their insights, and ask intelligent follow-up questions that show you understand their business."""
+    
+    def _build_framework_context(self, current_section: int) -> str:
+        """Build framework context for the current section."""
+        try:
+            if not self.framework_criteria:
+                return ""
+            
+            # Get current section info
+            section_keys = list(self.framework_criteria.keys())
+            if current_section <= 0 or current_section > len(section_keys):
+                return ""
+            
+            section_key = section_keys[current_section - 1]
+            section_data = self.framework_criteria[section_key]
+            
+            # Build context
+            context_parts = [
+                f"CURRENT SECTION: {section_data.get('section_name', section_key)}",
+                f"SECTION DESCRIPTION: {section_data.get('description', '')}",
+                "",
+                "CRITERIA TO GATHER IN THIS SECTION:"
+            ]
+            
+            # Add criteria details
+            criteria = section_data.get('criteria', {})
+            for criteria_key, criteria_info in criteria.items():
+                context_parts.append(f"- {criteria_key}: {criteria_info.get('description', '')}")
+                
+                # Add example questions
+                if 'question' in criteria_info:
+                    context_parts.append(f"  Example question: {criteria_info['question']}")
+                
+                # Add good/bad examples
+                if 'examples' in criteria_info:
+                    examples = criteria_info['examples']
+                    if 'good' in examples:
+                        context_parts.append(f"  Good answers: {', '.join(examples['good'][:3])}")
+                    if 'bad' in examples:
+                        context_parts.append(f"  Avoid answers like: {', '.join(examples['bad'][:3])}")
+                
+                context_parts.append("")  # Empty line between criteria
+            
+            return "\n".join(context_parts)
+            
+        except Exception as e:
+            logger.error(f"Failed to build framework context: {e}")
+            return ""
+    
     async def analyze_user_input(self, state: PersonaConversationState) -> PersonaConversationState:
         """Analyze user input to determine intent and extract topics."""
         try:
             user_message = state["messages"][-1].content if state["messages"] else ""
             
-            # Get conversation context
-            context_manager = state.get("enhanced_context_manager")
-            if context_manager:
-                context, token_count = await context_manager.get_context_for_llm(state["session_id"])
-                state["token_usage"]["context_tokens"] = token_count
+            # Simple intent analysis without LLM dependency
+            intent = self._analyze_intent_simple(user_message)
+            state["user_intent"] = intent
             
-            # Analyze user intent
-            intent_prompt = f"""
-            Analyze the user's message and determine their intent.
-            
-            User message: "{user_message}"
-            
-            Determine:
-            1. What type of intent this represents
-            2. Any specific question content if they're asking something
-            3. Topics mentioned that relate to business/expertise
-            """
-            
-            try:
-                if self.instructor_client:
-                    intent = await self._get_structured_response(intent_prompt, UserIntent)
-                else:
-                    intent_response = await self.llm_tool.generate_for_agent(
-                        agent_name="persona_agent",
-                        prompt=intent_prompt,
-                        session_id=state["session_id"],
-                        max_tokens=300,
-                        temperature=0.1
-                    )
-                    intent = self._parse_json_response(intent_response, UserIntent)
-                
-                state["user_intent"] = intent.intent_type
-                logger.info(f"Analyzed input - Intent: {intent.intent_type}, Topics: {intent.topics_mentioned}")
-                
-            except Exception as e:
-                logger.warning(f"Intent analysis failed: {e}")
-                state["user_intent"] = "answering"  # Default fallback
-            
+            logger.info(f"User intent analyzed: {intent}")
             return state
             
         except Exception as e:
             logger.error(f"Error in analyze_user_input: {e}")
-            state["user_intent"] = "answering"
+            state["user_intent"] = "answering"  # Default intent
             return state
     
-    async def answer_user_question(self, state: PersonaConversationState
-) -> PersonaConversationState:
-        """Handle user questions before proceeding with extraction."""
+    def _analyze_intent_simple(self, message: str) -> str:
+        """Simple intent analysis without LLM."""
+        message_lower = message.lower().strip()
+        
+        # Check for questions
+        question_words = ["what", "how", "why", "when", "where", "who", "which", "?"]
+        if any(word in message_lower for word in question_words):
+            return "questioning"
+        
+        # Check for greetings
+        greetings = ["hi", "hello", "hey", "good morning", "good afternoon"]
+        if any(greeting in message_lower for greeting in greetings):
+            return "greeting"
+        
+        # Check for ready signals
+        ready_words = ["ready", "let's start", "begin", "go", "yes", "sure", "okay"]
+        if any(word in message_lower for word in ready_words):
+            return "ready_to_start"
+        
+        # Default to answering
+        return "answering"
+    
+    async def answer_user_question(self, state: PersonaConversationState) -> PersonaConversationState:
+        """Answer user questions before continuing with persona building."""
         try:
             user_message = state["messages"][-1].content if state["messages"] else ""
-            business_context = state.get("business_context", {})
             
-            # Build context for answering questions
-            answer_prompt = f"""
-            The user has asked a question. Answer it helpfully and then guide back to persona building.
-            
-            User question: "{user_message}"
-            
-            Business context so far: {json.dumps(business_context, indent=2)}
-            
-            Provide a helpful answer and then smoothly transition back to gathering persona information.
-            Be direct and conversational, avoid excessive fluff.
-            """
-            
-            response = await self.llm_tool.generate_for_agent(
-                agent_name="persona_agent",
-                prompt=answer_prompt,
-                session_id=state["session_id"],
-                max_tokens=400,
-                temperature=0.3
-            )
-            
-            # Add response to messages
+            # Generate helpful response
+            response = self._generate_helpful_response(user_message)
             state["messages"].append(AIMessage(content=response))
-            logger.info("Agent answered the specific question!")
             
+            logger.info("Agent answered the user question!")
             return state
             
         except Exception as e:
             logger.error(f"Error in answer_user_question: {e}")
             return state
     
+    def _generate_helpful_response(self, question: str) -> str:
+        """Generate helpful response to user questions."""
+        question_lower = question.lower()
+        
+        if "section" in question_lower or "how many" in question_lower:
+            return """Great question! I'll guide you through 6 sections to build your complete persona:
+
+1. **Core Expertise & Ideal Customer Profile** - Your domain and who you serve
+2. **Brand Personality & Profile DNA** - Your unique identity and values  
+3. **Positioning & Expertise** - What makes you stand out
+4. **Voice, Style & Tone** - How you communicate
+5. **Content Goals & Target Audience** - Your content strategy
+6. **Long-Term Vision & Success Metrics** - Your bigger picture
+
+We'll have a natural conversation about each area. Ready to start with your expertise?"""
+        
+        elif "long" in question_lower or "time" in question_lower:
+            return "This usually takes 15-20 minutes of thoughtful conversation. We'll go at your pace - no rush! The more detailed you are, the better your persona will be. Shall we begin?"
+        
+        elif "persona" in question_lower or "what" in question_lower:
+            return "I'm creating a comprehensive brand persona document that captures your expertise, ideal clients, unique positioning, communication style, and business vision. This helps with marketing, content creation, and client attraction. Ready to dive in?"
+        
+        else:
+            return "I'm here to help! I'll ask you conversational questions about your business and expertise to create a detailed persona. It's like having a strategic conversation about your brand. Shall we get started?"
+    
     async def extract_and_respond(self, state: PersonaConversationState) -> PersonaConversationState:
-        """Main extraction and response generation node."""
+        """Main extraction and response generation node with proper LLM guidance."""
         try:
-            # Get section completion context
-            completion_manager = state.get("section_completion_manager")
-            if not completion_manager:
-                logger.error("No section completion manager available")
-                return state
+            # Get conversation state manager
+            completion_manager = state.get("conversation_state_manager")
+            session_id = state["session_id"]
+            user_message = state["messages"][-1].content if state["messages"] else ""
             
-            conversation_state = await completion_manager.get_conversation_state(state["session_id"])
-            section_context = completion_manager.build_context_for_llm(conversation_state)
+            # Get current section
+            if completion_manager:
+                conversation_state = await completion_manager.get_conversation_state(session_id)
+                current_section = conversation_state.current_section
+            else:
+                current_section = 1  # Default to first section
             
-            # Get enhanced conversation context
-            context_manager = state.get("enhanced_context_manager")
-            conversation_context = ""
+            # Build framework context for current section
+            framework_context = self._build_framework_context(current_section)
+            
+            # Get conversation history
+            context_manager = state.get("context_manager")
+            conversation_history = ""
             if context_manager:
-                conversation_context, _ = await context_manager.get_context_for_llm(
-                    state["session_id"], 
-                    include_system_context=section_context
-                )
+                conversation_history, _ = await context_manager.get_context_for_llm(session_id)
             
-            # Build extraction prompt
-            extraction_prompt = f"""
-            {section_context}
+            # Build comprehensive prompt for LLM
+            llm_prompt = f"""{self.system_prompt}
+
+{framework_context}
+
+CONVERSATION HISTORY:
+{conversation_history}
+
+USER'S LATEST MESSAGE: {user_message}
+
+INSTRUCTIONS:
+- You are currently in Section {current_section}
+- Focus on gathering the criteria listed above for this section
+- Be conversational and natural - don't sound like you're reading from a script
+- Acknowledge what they shared and build on it
+- Ask intelligent follow-up questions
+- If they've provided good information, confirm your understanding and transition naturally
+- If information is surface-level, dig deeper with specific questions
+
+Generate your response as Paul, the expert brand strategist."""
             
-            CONVERSATION HISTORY:
-            {conversation_context}
-            
-            CRITICAL INSTRUCTIONS:
-            The user just provided NEW information in their latest message. You MUST:
-            1. ACKNOWLEDGE what they specifically just told you (don't ignore their response)
-            2. BUILD UPON their previous responses - never repeat the same question
-            3. SHOW you understand their business/expertise area they mentioned
-            4. EXTRACT any framework criteria from their response
-            5. Ask the NEXT logical question that builds on what they've shared
-            
-            NEVER repeat questions. ALWAYS progress the conversation forward by building on what they've told you.
-            
-            Your response should:
-            - Start by acknowledging their specific input ("Great! I see you work with...")
-            - Extract relevant framework information with confidence scores (0.0-1.0)
-            - Ask a natural follow-up question that digs deeper into their expertise
-            - Reference what they've already shared to show continuity
-            
-            RESPOND WITH JSON containing extracted information AND a conversational response that builds on their input.
-            """
-            
-            try:
-                if self.instructor_client:
-                    response = await self._get_structured_response(extraction_prompt, ConversationResponse)
-                else:
-                    response_text = await self.llm_tool.generate_for_agent(
+            # Call LLM with proper guidance
+            if self.llm_tool:
+                try:
+                    ai_response = await self.llm_tool.generate_for_agent(
                         agent_name="persona_agent",
-                        prompt=extraction_prompt,
-                        session_id=state["session_id"],
-                        max_tokens=800,
-                        temperature=0.4
-                    )
-                    logger.info(f"LLM raw response: {response_text[:200]}...")
-                    response = self._parse_json_response(response_text, ConversationResponse)
-                    logger.info(f"Parsed response message: {response.message[:100]}...")
-                
-                # Process extractions
-                if response.extractions:
-                    framework_extractions = []
-                    for extraction in response.extractions:
-                        framework_extractions.append(FrameworkExtraction(
-                            session_id=state["session_id"],
-                            framework_section=extraction.framework_section,
-                            criteria_key=extraction.criteria_key,
-                            extracted_value=extraction.extracted_value,
-                            confidence_score=extraction.confidence_score,
-                            reasoning=extraction.reasoning
-                        ))
-                    
-                    # Update section progress
-                    updated_state = await completion_manager.update_extractions(
-                        state["session_id"], 
-                        framework_extractions
+                        prompt=llm_prompt,
+                        session_id=session_id,
+                        max_tokens=400,
+                        temperature=0.7
                     )
                     
-                    # Update completion percentage
-                    state["completion_percentage"] = completion_manager._calculate_overall_completion(updated_state)
+                    logger.info(f"✅ LLM response generated for section {current_section}")
                     
-                    logger.info(f"Extracted {len(response.extractions)} items, completion: {state['completion_percentage']:.1f}%")
-                
-                # Add response to messages
-                state["messages"].append(AIMessage(content=response.message))
-                state["current_focus"] = response.next_focus_area
-                state["conversation_stage"] = response.conversation_stage
-                
-                return state
-                
-            except Exception as e:
-                logger.error(f"Structured extraction failed: {e}")
-                # Fallback to basic response
-                fallback_response = await self._generate_fallback_response(state)
-                state["messages"].append(AIMessage(content=fallback_response))
-                return state
+                except Exception as e:
+                    logger.error(f"❌ LLM generation failed: {e}")
+                    ai_response = await self._fallback_section_response_content(current_section, user_message)
+            else:
+                logger.warning("No LLM tool available, using fallback")
+                ai_response = await self._fallback_section_response_content(current_section, user_message)
+            
+            # Add AI response to messages
+            state["messages"].append(AIMessage(content=ai_response))
+            
+            # Update completion percentage based on section
+            overall_progress = min((current_section / self.section_flow_manager.total_sections) * 100, 100)
+            state["completion_percentage"] = overall_progress
+            
+            logger.info(f"Generated response for section {current_section}, progress: {overall_progress:.1f}%")
+            
+            return state
             
         except Exception as e:
             logger.error(f"Error in extract_and_respond: {e}")
+            return await self._fallback_section_response(state)
+    
+    async def _fallback_section_response_content(self, current_section: int, user_message: str) -> str:
+        """Generate fallback response content."""
+        try:
+            # Use section flow manager for intelligent fallback
+            if len(user_message.strip()) < 30:
+                follow_up = self.section_flow_manager.get_follow_up_question(current_section, user_message)
+                return follow_up or "Could you tell me more about that? I'd love to understand the details better."
+            else:
+                # Ask next logical question from current section
+                next_question = self.section_flow_manager.get_next_question(current_section, [])
+                return next_question or "That's interesting! What else can you tell me about this area?"
+                
+        except Exception as e:
+            logger.error(f"Error in fallback content generation: {e}")
+            return "I'd love to learn more about your expertise. Could you tell me more about that?"
+    
+    async def _fallback_section_response(self, state: PersonaConversationState) -> PersonaConversationState:
+        """Fallback response when managers are not available."""
+        try:
+            user_message = state["messages"][-1].content if state["messages"] else ""
+            
+            # Simple fallback logic
+            if len(user_message.strip()) < 30:
+                ai_response = "Could you tell me more about that? I'd love to understand the details better."
+            else:
+                # Ask next logical question from section 1
+                next_question = self.section_flow_manager.get_next_question(1, [])
+                ai_response = next_question or "That's interesting! What else can you tell me about your expertise?"
+            
+            state["messages"].append(AIMessage(content=ai_response))
+            return state
+            
+        except Exception as e:
+            logger.error(f"Error in fallback response: {e}")
+            # Ultimate fallback
+            state["messages"].append(AIMessage(content="I'd love to learn more about your expertise. What's your area of specialization?"))
             return state
     
     async def check_completion(self, state: PersonaConversationState) -> PersonaConversationState:
         """Check if conversation is complete or should continue."""
         try:
-            completion_manager = state.get("section_completion_manager")
-            if not completion_manager:
-                return state
+            completion_manager = state.get("conversation_state_manager")
+            if completion_manager:
+                conversation_state = await completion_manager.get_conversation_state(state["session_id"])
+                overall_completion = await completion_manager.get_overall_completion(state["session_id"])
+                
+                if overall_completion > 0:
+                    state["completion_percentage"] = overall_completion
             
-            # Check section completion
-            is_complete, status = await completion_manager.check_section_completion(state["session_id"])
-            
-            # Only update completion percentage if we got a valid result
-            overall_completion = status.get("overall_completion", 0)
-            if overall_completion > 0:
-                state["completion_percentage"] = overall_completion
-            
-            # Determine conversation stage
+            # Determine conversation stage based on completion
             current_completion = state.get("completion_percentage", 0)
-            if current_completion >= 80:
+            if current_completion >= 90:
                 state["conversation_stage"] = "completion"
-            elif len(status.get("missing_criteria", [])) <= 2:
+            elif current_completion >= 70:
                 state["conversation_stage"] = "follow_up"
             else:
                 state["conversation_stage"] = "gathering"
             
-            # Add aggressive loop protection to prevent infinite loops
-            loop_count = state.get("loop_count", 0) + 1
-            state["loop_count"] = loop_count
-            
-            if loop_count >= 3:  # Prevent infinite loops aggressively
-                logger.warning(f"Loop protection activated after {loop_count} iterations - forcing completion")
-                state["conversation_stage"] = "completion"
-            
-            logger.info(f"Completion check: {current_completion:.1f}% complete, stage: {state['conversation_stage']}, loop: {loop_count}")
+            logger.info(f"Completion check: {current_completion:.1f}% - Stage: {state['conversation_stage']}")
             
             return state
             
@@ -272,17 +347,21 @@ class WorkflowNodes:
             return state
     
     async def wrap_up_conversation(self, state: PersonaConversationState) -> PersonaConversationState:
-        """Generate completion message and offer persona generation."""
+        """Wrap up the conversation with final summary."""
         try:
-            wrap_up_message = """
-            Excellent! We've gathered comprehensive information about your expertise and brand. 
-            I now have enough detail to generate your complete persona profile.
-            
-            Would you like me to generate your detailed marketing persona based on our conversation?
-            """
+            wrap_up_message = """Perfect! I've gathered comprehensive information about your business and expertise. 
+
+Your persona document will include:
+• Your core expertise and ideal customer profile
+• Brand personality and unique positioning  
+• Communication style and voice
+• Content strategy and audience insights
+• Long-term vision and success metrics
+
+This persona will help guide your marketing, content creation, and client attraction efforts. Thank you for the detailed conversation!"""
             
             state["messages"].append(AIMessage(content=wrap_up_message))
-            state["conversation_stage"] = "completion"
+            state["conversation_stage"] = "completed"
             
             logger.info("Conversation wrapped up successfully")
             return state
@@ -290,71 +369,3 @@ class WorkflowNodes:
         except Exception as e:
             logger.error(f"Error in wrap_up_conversation: {e}")
             return state
-    
-    async def _get_structured_response(self, prompt: str, response_model):
-        """Get structured response using instructor."""
-        try:
-            response = await self.instructor_client.chat.completions.create(
-                model="gpt-4o",
-                response_model=response_model,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=800,
-                temperature=0.3
-            )
-            return response
-        except Exception as e:
-            logger.error(f"Instructor request failed: {e}")
-            raise
-    
-    def _parse_json_response(self, response_text: str, model_class):
-        """Parse JSON response from LLM."""
-        try:
-            # Extract JSON from response
-            if "```json" in response_text:
-                json_part = response_text.split("```json")[1].split("```")[0].strip()
-            else:
-                json_part = response_text.strip()
-            
-            # Parse JSON
-            data = json.loads(json_part)
-            return model_class(**data)
-            
-        except Exception as e:
-            logger.error(f"JSON parsing failed: {e}")
-            # Return default instance
-            if model_class == UserIntent:
-                return UserIntent(intent_type="answering", topics_mentioned=[])
-            elif model_class == ConversationResponse:
-                return ConversationResponse(
-                    message="I'd like to learn more about your expertise. Can you tell me about your area of specialization?",
-                    extractions=[],
-                    conversation_stage="gathering"
-                )
-            else:
-                raise
-    
-    async def _generate_fallback_response(self, state: PersonaConversationState) -> str:
-        """Generate fallback response when structured extraction fails."""
-        try:
-            fallback_prompt = f"""
-            Continue the persona building conversation. Ask a natural follow-up question 
-            to gather more information about the user's expertise and business.
-            
-            Recent context: {state.get('business_context', {})}
-            
-            Be conversational and direct, minimal fluff.
-            """
-            
-            response = await self.llm_tool.generate_for_agent(
-                agent_name="persona_agent",
-                prompt=fallback_prompt,
-                session_id=state["session_id"],
-                max_tokens=200,
-                temperature=0.4
-            )
-            
-            return response
-            
-        except Exception as e:
-            logger.error(f"Fallback response generation failed: {e}")
-            return "Can you tell me more about your area of expertise?"

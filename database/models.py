@@ -101,6 +101,7 @@ class ConversationState(BaseModel):
     conversation_summary: str = ""
     recent_context: List[str] = Field(default_factory=list)
     token_count: int = 0
+    conversation_stage: str = "initial_greeting"  # Track conversation stage
     last_updated: datetime = Field(default_factory=datetime.utcnow)
 
 

@@ -41,7 +41,11 @@ class Settings(BaseSettings):
     
     # Session Management
     session_timeout_hours: int = int(os.getenv("SESSION_TIMEOUT_HOURS", "24"))
-    redis_url: Optional[str] = os.getenv("REDIS_URL")
+    redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379")
+    
+    # Memory Management
+    max_context_tokens: int = int(os.getenv("MAX_CONTEXT_TOKENS", "3000"))
+    recent_message_limit: int = int(os.getenv("RECENT_MESSAGE_LIMIT", "10"))
     
     @property
     def llm_config(self) -> Dict[str, str]:

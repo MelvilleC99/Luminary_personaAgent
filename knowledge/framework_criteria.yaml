@@ -1,218 +1,349 @@
-# Comprehensive Framework Criteria for Persona Agent
-# 60+ information points across 6 framework sections
+# Complete 54-Question Framework for Persona Agent
+# Updated with full 6-section structure from persona_summary_qa.md
 
 framework_sections:
   
-  "Core Expertise & Ideal Customer Profile (ICP)":
+  "1. Core Expertise & Ideal Customer Profile (ICP)":
     section_name: "Core Expertise & Ideal Customer Profile (ICP)"
+    section_number: 1
     description: "Foundational expertise and target customer definition"
+    completion_threshold: 1.0  # Must be 100% complete to advance
     criteria:
-      broad_expertise:
+      broad_domain_expertise:
+        question: "What's a broad topic or domain you understand deeply - one you could speak on confidently for hours?"
         description: "Domain-level expertise area"
-        required_elements:
-          - "Specific industry or field mentioned"
-          - "Clear professional domain"
-        sufficient_indicators:
-          - "Could speak on topic for hours"
-          - "Recognized expertise area"
-          - "Not generic business terms"
         examples:
           good: ["Manufacturing efficiency", "B2B sales", "Executive coaching", "AI and automation"]
           bad: ["Business", "Helping people", "Consulting", "Marketing"]
-        confidence_threshold: 0.7
-        conversation_starters:
-          - "What's a broad topic you could speak on for hours?"
-          - "What field do you have deep expertise in?"
-      
-      niche_expertise:
+        confidence_threshold: 0.8
+        
+      specific_niche_focus:
+        question: "Zoom in - what's a specific slice or sub-topic where your depth is undeniable?"
         description: "Specific specialization within domain"
-        required_elements:
-          - "Detailed specialization mentioned"
-          - "Unique angle or approach"
-        sufficient_indicators:
-          - "Specific methodology mentioned"
-          - "Particular problem focus"
-          - "Differentiating factor"
         examples:
           good: ["AI agent identification and business case development", "Lean manufacturing for automotive", "Content strategy for B2B SaaS"]
           bad: ["Operations", "Marketing", "Strategy", "Coaching"]
-        confidence_threshold: 0.7
-        conversation_starters:
-          - "What's your specific specialization within that domain?"
-          - "What's your unique angle on this topic?"
-      
-      target_audience:
+        confidence_threshold: 0.8
+        
+      ideal_client_definition:
+        question: "Who is your ideal client? Include: industry, role/title, size/stage of business. Bonus: If multiple buyers are involved, what triggers the sale (and who usually leads it)?"
         description: "Specific audience served (industry, role, size)"
-        required_elements:
-          - "Specific industry or sector"
-          - "Role or position level"
-          - "Company size or type"
-        sufficient_indicators:
-          - "Decision-maker identification"
-          - "Specific demographic details"
-          - "Pain point alignment"
         examples:
           good: ["CTOs at mid-size tech companies", "Operations managers in manufacturing", "Marketing directors at B2B SaaS startups"]
           bad: ["Business owners", "Everyone", "Small businesses", "People"]
         confidence_threshold: 0.8
-        conversation_starters:
-          - "Who is your ideal client? (industry, role, size)"
-          - "What type of person makes the decision to hire you?"
-      
-      core_problem:
+        
+      core_pain_point:
+        question: "What is the #1 pain point or inefficiency you solve for them? What do you want to be the obvious go-to for?"
         description: "Primary problem solved"
-        required_elements:
-          - "Specific problem statement"
-          - "Impact or consequence mentioned"
-        sufficient_indicators:
-          - "Problem urgency indicated"
-          - "Cost of not solving mentioned"
-          - "Measurable impact described"
         examples:
           good: ["Companies missing automation opportunities costing them efficiency", "Manual processes causing delays and errors"]
           bad: ["They need help", "Business problems", "Growth challenges"]
         confidence_threshold: 0.8
-        conversation_starters:
-          - "What's the #1 pain point you solve?"
-          - "What problem keeps your ideal clients up at night?"
-      
-      clear_outcome:
+        
+      specific_results_transformation:
+        question: "What's the specific result or transformation they walk away with? (Quantify or qualify it: revenue increase, time saved, team clarity, reduced churn, etc.)"
         description: "Tangible results delivered"
-        required_elements:
-          - "Specific measurable outcome"
-          - "Timeframe mentioned"
-        sufficient_indicators:
-          - "Quantifiable results"
-          - "Before/after comparison"
-          - "Success metrics defined"
         examples:
           good: ["Identify 3-5 automation opportunities within 30 days", "Reduce manual work by 40% through agent implementation"]
           bad: ["Better results", "Improved performance", "Growth"]
         confidence_threshold: 0.8
-        conversation_starters:
-          - "What specific results do clients get?"
-          - "How do you measure success?"
+        
+      adjacent_markets_audiences:
+        question: "What adjacent markets or audiences might benefit from your expertise?"
+        description: "Related markets that could benefit"
+        confidence_threshold: 0.7
+        
+      client_journey_mapping:
+        question: "What does your ideal client's journey look like from problem awareness to hiring you?"
+        description: "Buyer's journey from awareness to decision"
+        confidence_threshold: 0.7
 
-  "Brand Personality & Profile DNA":
+  "2. Brand Personality & Profile DNA":
     section_name: "Brand Personality & Profile DNA"
+    section_number: 2
     description: "Core personality traits and values that define the brand"
+    completion_threshold: 1.0
     criteria:
-      brand_personality:
+      brand_personality_values:
+        question: "If your brand was a person, how would you describe its personality? And what 2–3 core values guide how you work, choose clients, and show up online?"
         description: "How brand would be described as a person"
-        required_elements:
-          - "Personality traits mentioned"
-          - "Communication style described"
-        sufficient_indicators:
-          - "Distinct personality characteristics"
-          - "Relatable human qualities"
         examples:
           good: ["Analytical problem-solver who gets excited about finding inefficiencies", "Tech-savvy consultant who explains complex concepts simply"]
           bad: ["Professional", "Helpful", "Expert", "Good"]
-        confidence_threshold: 0.7
-        conversation_starters:
-          - "If your brand was a person, how would you describe it?"
-          - "What personality traits define your brand?"
-      
-      core_values:
-        description: "2-3 values that guide work"
-        required_elements:
-          - "Specific values named"
-          - "Application to work described"
-        sufficient_indicators:
-          - "Values influence decisions"
-          - "Clear priority hierarchy"
-        examples:
-          good: ["Efficiency - never accept 'that's how we've always done it'", "Transparency - show exactly how automation will impact the business"]
-          bad: ["Quality", "Service", "Trust", "Growth"]
         confidence_threshold: 0.8
-        conversation_starters:
-          - "What 2-3 core values guide how you work?"
-          - "What principles do you never compromise on?"
-      
-      unique_approach:
-        description: "What makes their method different"
-        required_elements:
-          - "Specific methodology or framework"
-          - "Differentiation from competitors"
-        sufficient_indicators:
-          - "Proprietary approach"
-          - "Unique angle or perspective"
-        examples:
-          good: ["The AI Opportunity Audit Framework", "Business-first approach to automation (not tech-first)"]
-          bad: ["Good process", "Proven methods", "Best practices"]
+        
+      unexpected_brand_edge:
+        question: "What do people say about you (or your brand) that you didn't expect - but now embrace? (This is often where your magnetic edge lives.)"
+        description: "Unexpected brand characteristics that create magnetic appeal"
         confidence_threshold: 0.7
-        conversation_starters:
-          - "How is your method different from others?"
-          - "What's your unique approach?"
+        
+      formative_experience:
+        question: "What personal story, experience, or hard-won lesson shaped how you now approach your work? What did it teach you - and how does it show up in how you lead, sell, or serve?"
+        description: "Personal experience that shaped approach"
+        confidence_threshold: 0.8
+        
+      origin_story:
+        question: "What personal pain, insight, or defining moment led you to start this business? What was happening at the time - and what did you realise that shaped everything after?"
+        description: "Emotional origin story behind the business"
+        confidence_threshold: 0.8
+        
+      biggest_professional_achievement:
+        question: "What's your biggest professional achievement that your ideal clients would find impressive?"
+        description: "Credibility anchor for target audience"
+        confidence_threshold: 0.7
+        
+      controversial_industry_opinion:
+        question: "What's a controversial opinion you hold about your industry that you're willing to defend publicly?"
+        description: "Contrarian position that creates differentiation"
+        confidence_threshold: 0.7
+        
+      secret_sauce:
+        question: "What's your 'secret sauce' - the thing you do that others in your space don't?"
+        description: "Unique competitive advantage"
+        confidence_threshold: 0.8
 
-  "Communication Style & Voice":
-    section_name: "Communication Style & Voice"
-    description: "How they communicate and their brand voice"
+  "3. Positioning & Expertise":
+    section_name: "Positioning & Expertise"
+    section_number: 3
+    description: "Clear market positioning and unique value proposition"
+    completion_threshold: 1.0
     criteria:
-      communication_style:
-        description: "Natural communication approach"
-        required_elements:
-          - "Specific style descriptors"
-          - "Tone characteristics"
-        sufficient_indicators:
-          - "Distinct voice qualities"
-          - "Communication preferences"
-        examples:
-          good: ["Direct and analytical - I explain the business case with data", "Practical and down-to-earth - I focus on real-world implementation"]
-          bad: ["Professional", "Friendly", "Clear", "Good"]
+      clear_value_explanation:
+        question: "If we stripped your job title away, how would you explain what you do - and the core problem you solve - to a potential buyer?"
+        description: "Plain-language explanation of value"
+        confidence_threshold: 0.8
+        
+      sweet_spot_audience:
+        question: "Zoom in - what's your 'sweet spot' audience? Include: industry, business stage, role/title, and what makes them ideal to work with."
+        description: "Ideal client characteristics"
+        confidence_threshold: 0.8
+        
+      unique_method_framework:
+        question: "How is your method or lens different from the norm? Do you have a unique framework, mental model, or belief that sets you apart?"
+        description: "Unique approach or methodology"
+        confidence_threshold: 0.8
+        
+      core_services_offers:
+        question: "What are your core services or offers? What's your primary offer? What's the format (1:1, group, async)?"
+        description: "Service delivery structure"
+        confidence_threshold: 0.8
+        
+      contrarian_perspective:
+        question: "What's one common belief in your industry that you completely disagree with?"
+        description: "Contrarian insight that creates differentiation"
         confidence_threshold: 0.7
-        conversation_starters:
-          - "How would you describe your communication style?"
-          - "What's your natural way of explaining things?"
-      
-      content_approach:
-        description: "How they share knowledge and insights"
-        required_elements:
-          - "Content philosophy described"
-          - "Approach to sharing ideas"
-        sufficient_indicators:
-          - "Clear content strategy"
-          - "Preferred content types"
-        examples:
-          good: ["Focus on practical case studies and ROI examples", "Break down complex AI concepts into business terms"]
-          bad: ["Share good content", "Try to help", "Post regularly"]
+        
+      common_misconceptions:
+        question: "What do people get wrong about your work or its value - especially before they've experienced it?"
+        description: "Misconceptions that slow sales cycles"
         confidence_threshold: 0.7
-        conversation_starters:
-          - "How do you like to share your expertise?"
-          - "What's your approach to content?"
+        
+      common_industry_mistakes:
+        question: "What's the most common mistake you see people in your target market making?"
+        description: "Industry mistakes that position expertise"
+        confidence_threshold: 0.7
 
-# Assessment Thresholds - Made more conservative
-assessment_thresholds:
+  "4. Voice, Style & Tone":
+    section_name: "Voice, Style & Tone"
+    section_number: 4
+    description: "Communication style and brand voice characteristics"
+    completion_threshold: 1.0
+    criteria:
+      voice_and_vibe:
+        question: "If your voice had a vibe, how would you describe it? Are you punchy? Philosophical? Straight-talking? Funny? Dramatic?"
+        description: "Natural communication tone and style"
+        confidence_threshold: 0.8
+        
+      public_posture:
+        question: "Are you someone who likes to stir the pot and challenge norms - or do you prefer to educate quietly and build steady trust?"
+        description: "Approach to public thought leadership"
+        confidence_threshold: 0.7
+        
+      content_mix_preference:
+        question: "When you share ideas, what mix feels most natural? Story-led (personal moments)? Insight-led (frameworks, trends)? Practical advice (how-tos)?"
+        description: "Natural content structure preferences"
+        confidence_threshold: 0.7
+        
+      reference_styles_metaphors:
+        question: "Do you naturally draw from any reference styles in your content? (e.g. sports metaphors, pop culture, adventure stories, parenting, nature, spiritual frameworks, etc.)"
+        description: "Natural reference frames and metaphors"
+        confidence_threshold: 0.7
+        
+      signature_phrases:
+        question: "Any sayings you're known for - or turns of phrase you find yourself repeating without trying?"
+        description: "Recognizable linguistic patterns"
+        confidence_threshold: 0.6
+        
+      preferred_content_formats:
+        question: "Which content formats feel most natural for you? Short-form posts? Deep-dive threads? Podcasts? Email?"
+        description: "Natural content format preferences"
+        confidence_threshold: 0.7
+        
+      style_inspiration:
+        question: "Are there any people, brands, or writers whose content style you admire - and why?"
+        description: "Style benchmarks and inspiration"
+        confidence_threshold: 0.6
+        
+      passionate_topics:
+        question: "What topics get you genuinely excited and passionate when discussing them?"
+        description: "Topics that create natural energy"
+        confidence_threshold: 0.7
+        
+      disagreement_handling_style:
+        question: "How do you handle disagreement or pushback in your content - diplomatically or head-on?"
+        description: "Conflict resolution and debate style"
+        confidence_threshold: 0.7
+        
+      content_creation_rhythm:
+        question: "What's your content creation rhythm - do you batch, create daily, or work in sprints?"
+        description: "Natural creative process and timing"
+        confidence_threshold: 0.6
+
+  "5. Content Goals & Target Audience":
+    section_name: "Content Goals & Target Audience"
+    section_number: 5
+    description: "Content strategy and audience psychology"
+    completion_threshold: 1.0
+    criteria:
+      content_business_objectives:
+        question: "What do you want your content to do for your business? (Pick your top 2 priorities: Awareness, Credibility, Lead Gen, Inbound DMs, Strategic Referrals, Partnerships, etc.)"
+        description: "Primary business objectives for content"
+        confidence_threshold: 0.8
+        
+      client_pain_points_language:
+        question: "What are the top 3 things your ideal client is struggling with right now - in their words?"
+        description: "Pain points in client's actual language"
+        confidence_threshold: 0.8
+        
+      client_desires_success_vision:
+        question: "What do they really want - both the surface-level goal and the underlying desire?"
+        description: "Client goals and emotional desires"
+        confidence_threshold: 0.8
+        
+      social_proof_testimonials:
+        question: "Do you have any standout client quotes, success stories, or testimonials that speak to your impact?"
+        description: "Evidence of results and transformation"
+        confidence_threshold: 0.7
+        
+      emotional_impact_goals:
+        question: "How do you want your content to make people feel? (E.g. Seen? Empowered? Curious? Challenged? Understood?)"
+        description: "Target emotional responses"
+        confidence_threshold: 0.7
+        
+      urgent_buying_catalyst:
+        question: "What is the single most urgent challenge your ideal buyer is facing - the one that makes them start looking for help?"
+        description: "Trigger moments that create urgency"
+        confidence_threshold: 0.8
+        
+      common_objections_hesitations:
+        question: "What hesitations, doubts, or objections do you often hear before someone says yes?"
+        description: "Sales objections and underlying fears"
+        confidence_threshold: 0.8
+        
+      three_am_worries:
+        question: "What keeps your ideal client awake at 3am worrying?"
+        description: "Deepest fears and anxieties"
+        confidence_threshold: 0.8
+        
+      false_beliefs:
+        question: "What false beliefs do your prospects hold that prevent them from getting results?"
+        description: "Limiting beliefs that need addressing"
+        confidence_threshold: 0.7
+        
+      quick_wins:
+        question: "What immediate win can you provide that builds trust quickly?"
+        description: "Trust-building quick wins"
+        confidence_threshold: 0.7
+
+  "6. Long-Term Vision & Success Metrics":
+    section_name: "Long-Term Vision & Success Metrics"
+    section_number: 6
+    description: "Future vision and success measurement"
+    completion_threshold: 1.0
+    criteria:
+      three_to_five_year_vision:
+        question: "If things go the way you want… where do you want to be in 3-5 years? Think: brand reputation, business model, ideal client base, or market category you want to lead."
+        description: "Long-term strategic vision"
+        confidence_threshold: 0.8
+        
+      legacy_reputation_goals:
+        question: "When people talk about your work 5 years from now - what do you want them to say? What shift, standard, or legacy do you want to leave behind?"
+        description: "Desired legacy and reputation"
+        confidence_threshold: 0.8
+        
+      success_signals_metrics:
+        question: "What are the 2-3 signals that tell you things are working? (Could be: sales, DMs, inbound leads, calls booked, referrals, content saves, brand mentions, etc.)"
+        description: "Key success indicators"
+        confidence_threshold: 0.8
+        
+      its_working_feeling:
+        question: "What would 'it's working' feel like for you? What moments or milestones would signal that your content and reputation are pulling in the right people?"
+        description: "Emotional and qualitative success signals"
+        confidence_threshold: 0.7
+        
+      ideal_engagement_model:
+        question: "What's your ideal client engagement model - project-based, retainer, productized, or hybrid?"
+        description: "Preferred business model structure"
+        confidence_threshold: 0.7
+        
+      professional_boundaries:
+        question: "What boundaries do you set with clients that others in your industry don't?"
+        description: "Professional boundaries that create differentiation"
+        confidence_threshold: 0.7
+        
+      scaling_vision:
+        question: "What's your vision for scaling - staying boutique, building a team, or creating products?"
+        description: "Approach to business scaling"
+        confidence_threshold: 0.7
+        
+      strategic_partnerships:
+        question: "What partnerships or collaborations would accelerate your growth?"
+        description: "Partnership opportunities and strategy"
+        confidence_threshold: 0.6
+        
+      success_metrics_beyond_revenue:
+        question: "What metrics beyond revenue indicate you're building the right business?"
+        description: "Non-revenue success indicators"
+        confidence_threshold: 0.7
+        
+      content_distribution_strategy:
+        question: "How do you prefer to distribute your content - LinkedIn, email, speaking, partnerships?"
+        description: "Preferred content distribution channels"
+        confidence_threshold: 0.7
+        
+      ideal_work_life_integration:
+        question: "What does your ideal work-life integration look like as your business grows?"
+        description: "Personal sustainability and lifestyle goals"
+        confidence_threshold: 0.6
+        
+      biggest_business_fear:
+        question: "What's your biggest fear about growing your business?"
+        description: "Concerns that need addressing in growth strategy"
+        confidence_threshold: 0.7
+        
+      definition_of_success:
+        question: "Beyond money and metrics, what would make you feel truly successful?"
+        description: "Personal definition of meaningful success"
+        confidence_threshold: 0.7
+
+# Assessment Configuration
+assessment_config:
   minimum_confidence: 0.6
-  sufficient_confidence: 0.7
-  excellent_confidence: 0.9
-  
-  section_completion_threshold: 0.8  # Higher threshold
-  overall_completion_threshold: 0.9  # Much higher - need 90% to complete
-  
+  section_completion_threshold: 1.0  # 100% completion required
+  overall_completion_threshold: 0.9
   max_follow_up_attempts: 3
-  context_window_turns: 10
-
-# Conversation Flow Patterns
-conversation_patterns:
-  opening_strategies:
-    - "What's something you could talk about for hours?"
-    - "If I asked your best client what you're known for, what would they say?"
-    - "What problem do you solve that keeps people up at night?"
   
-  transition_phrases:
-    - "That's fascinating - it sounds like..."
-    - "I can see why that would be important. Now I'm curious about..."
-    - "Perfect, that gives me a clear picture of... Let me dig into..."
+  # Context management
+  context_window_turns: 8
+  max_context_tokens: 4000
   
-  confirmation_patterns:
-    - "Let me make sure I understand..."
-    - "So if I'm hearing you correctly..."
-    - "Just to confirm, you're saying..."
-  
-  depth_seeking:
-    - "Can you give me a specific example of that?"
-    - "What does that look like in practice?"
-    - "Tell me more about how that works..."
-    - "Who specifically do you help with this?"
-    - "What results do your clients typically see?"
+  # Question asking guidance
+  question_asking_guidance:
+    - "Ask natural, conversational questions based on the framework"
+    - "Use follow-up questions to dig deeper when answers are vague"
+    - "Reference previous answers to build context"
+    - "Only save information with confidence >= threshold"
+    - "Must complete 100% of current section before advancing"
+    - "Guide conversation but let LLM choose specific questions"
+    - "Ask 1-2 questions at a time, not overwhelming lists"

@@ -5,7 +5,7 @@ FastAPI endpoints for the Luminary Persona Agent.
 import logging
 import asyncio
 from typing import Dict, Any, Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -97,6 +97,16 @@ async def health_check():
     return health
 
 
+@app.get("/rest/v1/notification_logs")
+async def notification_logs_stub(
+    select: Optional[str] = None,
+    status: Optional[str] = None
+):
+    """Stub endpoint to prevent 404 errors from frontend polling."""
+    logger.debug(f"Notification logs requested: select={select}, status={status}")
+    return []  # Return empty array to satisfy frontend
+
+
 @app.post("/api/query", response_model=QueryResponse)
 async def handle_query(request: QueryRequest):
     """
@@ -113,7 +123,7 @@ async def handle_query(request: QueryRequest):
     try:
         logger.info(f"🔄 Processing query: '{request.query[:100]}...'")
         
-        # If no session_id provided, start a new session AND process the user's input
+        # If no session_id provided, start a new session
         if not request.session_id:
             logger.info("🆕 Starting new session")
             session_result = await coordinator.start_session(
@@ -128,23 +138,14 @@ async def handle_query(request: QueryRequest):
                     error=session_result["error"]
                 )
             
-            # Process the user's actual input instead of returning canned message
+            # Return the greeting message without processing user input yet
             session_id = session_result["session_id"]
-            logger.info(f"💬 Processing first input for new session: {session_id}")
-            result = await coordinator.process_user_input(session_id, request.query)
-            
-            if "error" in result:
-                logger.error(f"❌ Error processing input: {result['error']}")
-                return QueryResponse(
-                    aiResponse="Hello! I'm here to help you build your personal brand persona. What would you like to work on today?",
-                    sessionId=session_id,
-                    error=result["error"]
-                )
+            greeting_message = session_result.get("message", "Hello! I'm here to help you build your personal brand persona.")
             
             return QueryResponse(
-                aiResponse=result["message"],
+                aiResponse=greeting_message,
                 sessionId=session_id,
-                sessionEnded=result.get("session_ended", False)
+                sessionEnded=False
             )
         
         # Process user input for existing session

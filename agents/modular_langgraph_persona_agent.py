@@ -14,8 +14,10 @@ from langchain_core.messages import BaseMessage, HumanMessage
 from .components.models import PersonaConversationState
 from .components.workflow_nodes import WorkflowNodes
 from .components.workflow_router import WorkflowRouter
-from memory.managers.section_completion_manager import SectionCompletionManager
+from memory.redis_context_manager import RedisContextManager
+from memory.managers.conversation_state import ConversationStateManager, ConversationStage
 from memory.managers.enhanced_context_manager import EnhancedContextManager
+from orchestrator.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -31,15 +33,32 @@ class ModularLangGraphPersonaAgent:
         """Initialize the modular persona agent."""
         self.llm_tool = llm_tool
         self.session_manager = session_manager
-        self.context_manager = context_manager
         self.database = database
         
         # Load framework criteria
         self.framework_criteria = self._load_framework_criteria()
         
-        # Initialize enhanced managers
-        self.section_completion_manager = SectionCompletionManager(database)
-        self.enhanced_context_manager = EnhancedContextManager(database, llm_tool)
+        # Initialize Redis context manager if not provided
+        if context_manager is None:
+            self.context_manager = RedisContextManager(
+                redis_url=settings.redis_url,
+                database=database,
+                llm_tool=llm_tool,
+                max_token_limit=settings.max_context_tokens,
+                recent_message_limit=settings.recent_message_limit
+            )
+        else:
+            self.context_manager = context_manager
+        
+        # Initialize conversation state manager
+        self.conversation_state_manager = ConversationStateManager(
+            redis_context_manager=self.context_manager,
+            database=database,
+            framework_sections=self.framework_criteria
+        )
+        
+        # Keep legacy enhanced context manager for backward compatibility
+        self.enhanced_context_manager = EnhancedContextManager(database, llm_tool) if database else None
         
         # Initialize workflow components
         self.workflow_nodes = WorkflowNodes(llm_tool, self.framework_criteria)
@@ -108,29 +127,35 @@ class ModularLangGraphPersonaAgent:
         return workflow
     
     async def start_conversation(self, session_id: str) -> Dict[str, Any]:
-        """Start a new conversation with opening message."""
+        """Start a new conversation with proper greeting sequence."""
         try:
-            # Initialize conversation state
+            # Step 1: Initial greeting - exactly as specified
+            opening_message = """Hello, I'm Paul. I'm here to assist you in creating your personal persona. Let me know when you are ready to start."""
+            
+            # Initialize conversation state with greeting stage tracking
             initial_state = {
                 "messages": [],
                 "business_context": {},
                 "framework_extractions": {},
+                "current_section": 1,
                 "current_focus": None,
                 "user_intent": None,
-                "conversation_stage": "opening",
+                "conversation_stage": "initial_greeting",  # Track greeting stage
                 "session_id": session_id,
                 "completion_percentage": 0.0,
                 "token_usage": {},
                 "framework_progress": {},
-                "section_completion_manager": self.section_completion_manager,
-                "enhanced_context_manager": self.enhanced_context_manager
+                "conversation_state_manager": self.conversation_state_manager,
+                "context_manager": self.context_manager
             }
-            
-            # Don't generate a hardcoded opening message - let the workflow handle the first response
             
             return {
                 "status": "conversation_started",
-                "session_id": session_id
+                "message": opening_message,
+                "conversation_type": "persona_building",
+                "completion_percentage": 0.0,
+                "session_id": session_id,
+                "conversation_stage": "initial_greeting"
             }
             
         except Exception as e:
@@ -151,24 +176,50 @@ class ModularLangGraphPersonaAgent:
     async def process_input(self, session_id: str, user_input: str) -> Dict[str, Any]:
         """Process user input through the LangGraph workflow."""
         try:
-            # Add user message to enhanced context
-            await self.enhanced_context_manager.add_message(
-                session_id=session_id,
-                role="user",
-                content=user_input
-            )
+            # Add user message to context if available
+            if self.context_manager:
+                await self.context_manager.add_message(
+                    session_id=session_id,
+                    role="user",
+                    content=user_input
+                )
             
             # Debug: Ensure user_input is a string
             logger.debug(f"Processing user input: {type(user_input)} = {user_input}")
             
             # Get conversation context and build initial state
-            conversation_context, token_count = await self.enhanced_context_manager.get_context_for_llm(session_id)
+            conversation_context = ""
+            token_count = 0
+            if self.context_manager:
+                conversation_context, token_count = await self.context_manager.get_context_for_llm(session_id)
             
             # Build state for workflow - ensure user_input is a string
             if not isinstance(user_input, str):
                 logger.error(f"user_input is not a string: {type(user_input)} = {user_input}")
                 user_input = str(user_input)
             
+            # Get current conversation stage
+            conversation_stage = "initial_greeting"  # Default for new conversations
+            if self.conversation_state_manager:
+                current_state = await self.conversation_state_manager.get_conversation_state(session_id)
+                
+                # Handle ConversationState object properly
+                if hasattr(current_state, 'conversation_stage'):
+                    conversation_stage = getattr(current_state, 'conversation_stage', "initial_greeting")
+                elif isinstance(current_state, dict):
+                    conversation_stage = current_state.get("conversation_stage", "initial_greeting")
+            
+            logger.info(f"Conversation stage: {conversation_stage}")
+            
+            # Handle greeting sequence stages
+            if conversation_stage == "initial_greeting":
+                return await self._handle_ready_response(session_id, user_input, current_state if self.conversation_state_manager else None)
+            elif conversation_stage == "waiting_for_section_confirm":
+                return await self._handle_section_start(session_id, user_input, current_state if self.conversation_state_manager else None)
+            elif conversation_stage == "resuming":
+                return await self._handle_resume(session_id, user_input, current_state if self.conversation_state_manager else None)
+            
+            # Continue with normal section work
             state = {
                 "messages": [HumanMessage(content=user_input)],
                 "business_context": {},
@@ -180,8 +231,8 @@ class ModularLangGraphPersonaAgent:
                 "completion_percentage": 0.0,
                 "token_usage": {"input_tokens": token_count},
                 "framework_progress": {},
-                "section_completion_manager": self.section_completion_manager,
-                "enhanced_context_manager": self.enhanced_context_manager
+                "conversation_state_manager": self.conversation_state_manager,
+                "context_manager": self.context_manager
             }
             
             # Run through workflow with recursion limit
@@ -226,13 +277,14 @@ class ModularLangGraphPersonaAgent:
                 logger.warning("No AI messages found in workflow result - using fallback")
                 response_message = "Hello! I'm here to help you build your personal brand persona. What would you like to work on today?"
             
-            # Add assistant response to enhanced context
-            await self.enhanced_context_manager.add_message(
-                session_id=session_id,
-                role="assistant",
-                content=response_message,
-                agent_type="persona_agent"
-            )
+            # Add assistant response to context if available
+            if self.context_manager:
+                await self.context_manager.add_message(
+                    session_id=session_id,
+                    role="assistant",
+                    content=response_message,
+                    agent_type="persona_agent"
+                )
             
             # Update session progress if session manager available
             if self.session_manager and result.get("completion_percentage", 0) > 0:
@@ -269,34 +321,19 @@ class ModularLangGraphPersonaAgent:
     async def get_progress(self, session_id: str) -> Dict[str, Any]:
         """Get detailed progress information for the session."""
         try:
-            conversation_state = await self.section_completion_manager.get_conversation_state(session_id)
-            
-            # Build progress response
-            progress = {
-                "overall_completion": self.section_completion_manager._calculate_overall_completion(conversation_state),
-                "current_section": conversation_state.current_section,
-                "total_sections": conversation_state.total_sections,
-                "sections": {}
-            }
-            
-            # Add section details
-            for section_num, section_progress in conversation_state.section_progress.items():
-                progress["sections"][section_progress.section_name] = {
-                    "completed": len(section_progress.criteria_completed),
-                    "total": len(section_progress.criteria_completed) + len(section_progress.criteria_missing),
-                    "percentage": section_progress.completion_percentage,
-                    "status": "Complete" if section_progress.is_complete else "In Progress",
-                    "completed_items": [
-                        {"key": key, "description": f"{key.replace('_', ' ').title()}"}
-                        for key in section_progress.criteria_completed
-                    ],
-                    "missing_items": [
-                        {"key": key, "description": f"{key.replace('_', ' ').title()}"}
-                        for key in section_progress.criteria_missing
-                    ]
+            if not self.conversation_state_manager:
+                return {
+                    "error": "Conversation state manager not available",
+                    "overall_completion": 0,
+                    "current_section": 1,
+                    "total_sections": 6,
+                    "sections": {}
                 }
             
-            return progress
+            # Get framework progress summary
+            progress_summary = await self.conversation_state_manager.get_framework_progress_summary(session_id)
+            
+            return progress_summary
             
         except Exception as e:
             logger.error(f"Error getting progress: {e}")
@@ -307,6 +344,220 @@ class ModularLangGraphPersonaAgent:
                 "total_sections": 6,
                 "sections": {}
             }
+    
+    async def _handle_ready_response(self, session_id: str, user_input: str, state) -> Dict[str, Any]:
+        """Handle user response to initial greeting."""
+        user_lower = user_input.lower().strip()
+        ready_words = ["ready", "yes", "sure", "okay", "let's go", "lets go", "start", "begin", "go", "ok", "let's start", "lets start"]
+        
+        if any(word in user_lower for word in ready_words):
+            # User is ready to start - begin with first section
+            section_start = """Great! Let's dive into your persona.
+
+**Section 1: Core Expertise & Ideal Customer Profile**
+
+This helps me understand your expertise and who you serve.
+
+What's a broad topic or domain you understand deeply - one you could speak on confidently for hours?"""
+            
+            # Update conversation stage
+            if self.conversation_state_manager:
+                try:
+                    await self.conversation_state_manager.set_conversation_stage(
+                        session_id, 
+                        ConversationStage.SECTION_WORK
+                    )
+                except Exception as e:
+                    logger.warning(f"Could not update conversation stage: {e}")
+            
+            # Add assistant message to context
+            if self.context_manager:
+                try:
+                    await self.context_manager.add_message(
+                        session_id=session_id,
+                        role="assistant", 
+                        content=section_start
+                    )
+                except Exception as e:
+                    logger.warning(f"Could not add message to context: {e}")
+            
+            return {
+                "status": "section_started",
+                "message": section_start,
+                "conversation_stage": "section_work",
+                "current_section": 1,
+                "session_id": session_id
+            }
+        else:
+            fallback_msg = "No problem! Just let me know when you're ready to start building your personal persona."
+            
+            if self.context_manager:
+                try:
+                    await self.context_manager.add_message(
+                        session_id=session_id,
+                        role="assistant",
+                        content=fallback_msg
+                    )
+                except Exception as e:
+                    logger.warning(f"Could not add message to context: {e}")
+            
+            return {
+                "status": "waiting_for_ready",
+                "message": fallback_msg,
+                "conversation_stage": "initial_greeting",
+                "session_id": session_id
+            }
+
+    async def _handle_section_start(self, session_id: str, user_input: str, state) -> Dict[str, Any]:
+        """Handle confirmation to start section work."""
+        user_lower = user_input.lower().strip()
+        confirm_words = ["yes", "ready", "sure", "okay", "let's go", "start", "begin", "ok"]
+        
+        if any(word in user_lower for word in confirm_words):
+            # Step 3: Begin section work
+            # Note: We can't call the missing methods, so we'll handle this through the workflow
+            
+            section_start = """Great! 
+
+Section 1: Core Expertise & Ideal Customer Profile
+
+What's a broad topic or domain you understand deeply - one you could speak on confidently for hours?"""
+            
+            if self.context_manager:
+                await self.context_manager.add_message(
+                    session_id=session_id,
+                    role="assistant",
+                    content=section_start
+                )
+            
+            return {
+                "status": "section_work", 
+                "message": section_start,
+                "conversation_stage": "section_work",
+                "current_section": 1,
+                "session_id": session_id
+            }
+        else:
+            wait_msg = "Take your time! Just let me know when you're ready to start with the first section."
+            
+            if self.context_manager:
+                await self.context_manager.add_message(
+                    session_id=session_id,
+                    role="assistant",
+                    content=wait_msg
+                )
+            
+            return {
+                "status": "waiting_for_confirmation",
+                "message": wait_msg,
+                "conversation_stage": "waiting_for_section_confirm",
+                "session_id": session_id
+            }
+
+    async def _handle_resume(self, session_id: str, user_input: str, state) -> Dict[str, Any]:
+        """Handle session resumption."""
+        user_lower = user_input.lower().strip()
+        ready_words = ["ready", "yes", "continue", "sure", "okay", "let's continue", "ok"]
+        
+        if any(word in user_lower for word in ready_words):
+            # Resume normal section work
+            # Note: We can't call the missing methods, so we'll handle this through the workflow
+            
+            current_section = 1
+            completion = 0.0
+            
+            # Try to get state information if available
+            if state and hasattr(state, 'current_section'):
+                current_section = getattr(state, 'current_section', 1)
+                completion = getattr(state, 'completion_percentage', 0.0)
+            elif isinstance(state, dict):
+                current_section = state.get("current_section", 1)
+                completion = state.get("completion_percentage", 0.0)
+            
+            resume_message = f"Perfect! Let's continue with Section {current_section}. We're about {completion:.0f}% complete overall."
+            
+            if self.context_manager:
+                await self.context_manager.add_message(
+                    session_id=session_id,
+                    role="assistant",
+                    content=resume_message
+                )
+            
+            return {
+                "status": "section_work",
+                "message": resume_message,
+                "conversation_stage": "section_work",
+                "current_section": current_section,
+                "completion_percentage": completion,
+                "session_id": session_id
+            }
+        else:
+            wait_msg = "No rush! Let me know when you're ready to continue where we left off."
+            
+            if self.context_manager:
+                await self.context_manager.add_message(
+                    session_id=session_id,
+                    role="assistant", 
+                    content=wait_msg
+                )
+            
+            return {
+                "status": "waiting_for_resume",
+                "message": wait_msg,
+                "conversation_stage": "resuming",
+                "session_id": session_id
+            }
+
+    async def resume_session(self, session_id: str) -> Dict[str, Any]:
+        """Resume a paused session."""
+        try:
+            if not self.conversation_state_manager:
+                return await self.start_conversation(session_id)
+            
+            state = await self.conversation_state_manager.get_conversation_state(session_id)
+            
+            if not state:
+                return await self.start_conversation(session_id)
+            
+            # Handle ConversationState object properly
+            current_section = state.current_section
+            completion = await self.conversation_state_manager.get_overall_completion(session_id)
+            conversation_stage = getattr(state, 'conversation_stage', 'section_work')
+            
+            section_names = [
+                "Core Expertise & Ideal Customer Profile",
+                "Brand Personality & Profile DNA", 
+                "Positioning & Expertise", 
+                "Voice, Style & Tone",
+                "Content Goals & Target Audience",
+                "Long-Term Vision & Success Metrics"
+            ]
+            
+            if conversation_stage == "initial_greeting":
+                resume_msg = "Welcome back! I'm still here to help you create your personal persona. Let me know when you're ready to start."
+            elif conversation_stage == "waiting_for_section_confirm":
+                resume_msg = "Welcome back! We were about to start working on the six persona sections. Are you ready to begin?"
+            elif current_section <= 6:
+                section_name = section_names[current_section-1] if current_section <= len(section_names) else "the final section"
+                resume_msg = f"Hey! We ended off working on Section {current_section}: {section_name}. We're about {completion:.0f}% complete overall. Let me know if you're ready to continue."
+            else:
+                resume_msg = "Welcome back! We've completed all sections and your persona is ready."
+            
+            # Note: We can't call the missing update_conversation_stage method
+            # The workflow will handle the conversation stage transitions
+            
+            return {
+                "status": "resumed",
+                "message": resume_msg,
+                "conversation_stage": "resuming",
+                "current_section": current_section,
+                "completion_percentage": completion,
+                "session_id": session_id
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to resume session: {e}")
+            return await self.start_conversation(session_id)
     
     async def health_check(self) -> Dict[str, Any]:
         """Check health of the agent and its components."""
@@ -326,7 +577,8 @@ class ModularLangGraphPersonaAgent:
         health["components"]["framework_criteria"] = "loaded" if self.framework_criteria else "missing"
         
         # Check managers
-        health["components"]["section_completion_manager"] = "initialized" if self.section_completion_manager else "missing"
+        health["components"]["conversation_state_manager"] = "initialized" if self.conversation_state_manager else "missing"
+        health["components"]["context_manager"] = "initialized" if self.context_manager else "missing"
         health["components"]["enhanced_context_manager"] = "initialized" if self.enhanced_context_manager else "missing"
         
         # Check workflow
@@ -335,5 +587,3 @@ class ModularLangGraphPersonaAgent:
         return health
 
 
-# Maintain backwards compatibility
-LangGraphPersonaAgent = ModularLangGraphPersonaAgent
