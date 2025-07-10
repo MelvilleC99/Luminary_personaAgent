@@ -159,46 +159,7 @@ Be conversational, acknowledge what they share, build on their insights, and ask
         # Default to answering
         return "answering"
     
-    async def answer_user_question(self, state: PersonaConversationState) -> PersonaConversationState:
-        """Answer user questions before continuing with persona building."""
-        try:
-            user_message = state["messages"][-1].content if state["messages"] else ""
-            
-            # Generate helpful response
-            response = self._generate_helpful_response(user_message)
-            state["messages"].append(AIMessage(content=response))
-            
-            logger.info("Agent answered the user question!")
-            return state
-            
-        except Exception as e:
-            logger.error(f"Error in answer_user_question: {e}")
-            return state
-    
-    def _generate_helpful_response(self, question: str) -> str:
-        """Generate helpful response to user questions."""
-        question_lower = question.lower()
-        
-        if "section" in question_lower or "how many" in question_lower:
-            return """Great question! I'll guide you through 6 sections to build your complete persona:
 
-1. **Core Expertise & Ideal Customer Profile** - Your domain and who you serve
-2. **Brand Personality & Profile DNA** - Your unique identity and values  
-3. **Positioning & Expertise** - What makes you stand out
-4. **Voice, Style & Tone** - How you communicate
-5. **Content Goals & Target Audience** - Your content strategy
-6. **Long-Term Vision & Success Metrics** - Your bigger picture
-
-We'll have a natural conversation about each area. Ready to start with your expertise?"""
-        
-        elif "long" in question_lower or "time" in question_lower:
-            return "This usually takes 15-20 minutes of thoughtful conversation. We'll go at your pace - no rush! The more detailed you are, the better your persona will be. Shall we begin?"
-        
-        elif "persona" in question_lower or "what" in question_lower:
-            return "I'm creating a comprehensive brand persona document that captures your expertise, ideal clients, unique positioning, communication style, and business vision. This helps with marketing, content creation, and client attraction. Ready to dive in?"
-        
-        else:
-            return "I'm here to help! I'll ask you conversational questions about your business and expertise to create a detailed persona. It's like having a strategic conversation about your brand. Shall we get started?"
     
     async def extract_and_respond(self, state: PersonaConversationState) -> PersonaConversationState:
         """Main extraction and response generation node with proper LLM guidance."""

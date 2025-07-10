@@ -86,7 +86,6 @@ class ModularLangGraphPersonaAgent:
         
         # Add workflow nodes
         workflow.add_node("analyze_input", self.workflow_nodes.analyze_user_input)
-        workflow.add_node("answer_question", self.workflow_nodes.answer_user_question)
         workflow.add_node("extract_and_respond", self.workflow_nodes.extract_and_respond)
         workflow.add_node("check_completion", self.workflow_nodes.check_completion)
         workflow.add_node("wrap_up", self.workflow_nodes.wrap_up_conversation)
@@ -99,13 +98,9 @@ class ModularLangGraphPersonaAgent:
             "analyze_input",
             self.workflow_router.route_after_analyze,
             {
-                "answer_question": "answer_question",
                 "extract_and_respond": "extract_and_respond"
             }
         )
-        
-        # Route from answer_question back to extraction
-        workflow.add_edge("answer_question", "extract_and_respond")
         
         # Route from extraction to completion check
         workflow.add_edge("extract_and_respond", "check_completion")
