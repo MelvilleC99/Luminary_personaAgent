@@ -1,0 +1,111 @@
+archetypes:
+  the_expert:
+    name: "The Expert"
+    description: "Analytical, data-driven, focuses on deep expertise and proven methodologies"
+    communication_style: "Direct, factual, evidence-based with case studies and metrics"
+    content_approach: "Frameworks, research insights, and detailed analysis"
+    example_response: "I solve problems through proven methodologies and data analysis"
+    linkedin_presence: "Shares detailed frameworks, case studies, and industry research"
+    typical_posts: "Step-by-step guides, data-driven insights, methodology explanations"
+  
+  the_innovator:
+    name: "The Innovator"
+    description: "Forward-thinking, creative, challenges conventional wisdom"
+    communication_style: "Provocative, trend-focused, questions status quo"
+    content_approach: "Trend analysis, future predictions, contrarian viewpoints"
+    example_response: "I challenge conventional approaches and pioneer new solutions"
+    linkedin_presence: "Shares cutting-edge trends, challenges industry norms"
+    typical_posts: "Trend predictions, contrarian takes, innovation spotlights"
+  
+  the_mentor:
+    name: "The Mentor"
+    description: "Teaching-focused, supportive, helps others grow and succeed"
+    communication_style: "Encouraging, educational, story-driven"
+    content_approach: "Lessons learned, growth stories, practical advice"
+    example_response: "I guide others through challenges I've successfully navigated"
+    linkedin_presence: "Shares lessons learned, encourages professional growth"
+    typical_posts: "Career advice, lessons learned, motivational insights"
+  
+  the_strategist:
+    name: "The Strategist"
+    description: "Big-picture thinker, focuses on systems and strategic planning"
+    communication_style: "Strategic, systematic, focuses on long-term thinking"
+    content_approach: "Strategic frameworks, systems thinking, planning methodologies"
+    example_response: "I help organizations think strategically and plan for sustainable growth"
+    linkedin_presence: "Shares strategic insights, planning frameworks, systems thinking"
+    typical_posts: "Strategic planning guides, systems analysis, long-term thinking"
+  
+  the_implementer:
+    name: "The Implementer"
+    description: "Hands-on, practical, focuses on execution and getting things done"
+    communication_style: "Practical, action-oriented, process-focused"
+    content_approach: "Implementation guides, practical tips, execution strategies"
+    example_response: "I turn strategies into reality through systematic execution"
+    linkedin_presence: "Shares practical implementation tips, execution strategies"
+    typical_posts: "How-to guides, implementation checklists, execution stories"
+  
+  the_connector:
+    name: "The Connector"
+    description: "Relationship-focused, builds networks and facilitates connections"
+    communication_style: "Warm, collaborative, community-building"
+    content_approach: "Network building, collaboration stories, community insights"
+    example_response: "I create value by connecting the right people and ideas"
+    linkedin_presence: "Facilitates introductions, builds professional communities"
+    typical_posts: "Network building tips, collaboration stories, community highlights"
+
+communication_styles:
+  formal_analytical:
+    description: "Professional, data-driven, structured"
+    tone: "Authoritative and evidence-based"
+    language: "Technical terminology, metrics, formal structure"
+    example: "Our analysis indicates a 40% improvement in conversion rates when implementing this framework"
+  
+  conversational_expert:
+    description: "Approachable but knowledgeable, like talking to a smart colleague"
+    tone: "Confident but friendly"
+    language: "Clear explanations with some industry terms, personal anecdotes"
+    example: "Here's what I've learned from working with 50+ SaaS companies..."
+  
+  storytelling_mentor:
+    description: "Narrative-driven, shares experiences and lessons"
+    tone: "Warm, encouraging, experiential"
+    language: "Story-based, metaphors, personal insights"
+    example: "I remember when I first faced this challenge. Here's what I wish I'd known..."
+  
+  direct_tactical:
+    description: "Straight to the point, actionable, no fluff"
+    tone: "Efficient and practical"
+    language: "Bullet points, clear steps, immediate actions"
+    example: "3 steps to fix this: 1) Do X, 2) Implement Y, 3) Measure Z"
+  
+  thought_leadership:
+    description: "Strategic, forward-thinking, industry perspective"
+    tone: "Visionary and strategic"
+    language: "Trend analysis, strategic insights, industry implications"
+    example: "The industry is shifting toward X, and here's what it means for your business..."
+
+content_preferences:
+  frameworks_and_processes:
+    description: "Step-by-step methodologies and structured approaches"
+    formats: ["Process maps", "Checklists", "Framework diagrams"]
+    example: "The 5-Phase Customer Onboarding Framework"
+  
+  case_studies_and_results:
+    description: "Real client stories with measurable outcomes"
+    formats: ["Before/after scenarios", "Results summaries", "Implementation stories"]
+    example: "How we increased retention by 60% for a Series B SaaS company"
+  
+  tactical_tips_and_hacks:
+    description: "Immediate, actionable advice people can implement today"
+    formats: ["Quick tips", "Tool recommendations", "Growth hacks"]
+    example: "One email template that increased our response rate by 40%"
+  
+  industry_insights:
+    description: "Market analysis, trends, and strategic perspectives"
+    formats: ["Trend analysis", "Market research", "Industry predictions"]
+    example: "Why 2024 will be the year of customer-led growth for SaaS"
+  
+  personal_lessons:
+    description: "Learning experiences, failures, and growth stories"
+    formats: ["Lesson learned posts", "Failure stories", "Career reflections"]
+    example: "The $100K mistake that taught me the most about product-market fit"

@@ -1,0 +1,175 @@
+framework:
+  metadata:
+    version: "1.0"
+    total_sections: 4
+    estimated_time: "20-25 minutes"
+    description: "LinkedIn persona building framework for founders and entrepreneurs"
+    objectives:
+      - "Define professional expertise and ideal customer"
+      - "Establish brand personality and communication style" 
+      - "Develop positioning and value proposition"
+      - "Create content strategy and messaging"
+
+  section_1:
+    name: "Core Expertise & Ideal Customer"
+    section_number: 1
+    objective: "Define your professional expertise and target audience"
+    estimated_time: "6-8 minutes"
+    criteria:
+      broad_domain_expertise:
+        name: "broad_domain_expertise"
+        description: "High-level area of professional expertise"
+        question: "What's a broad domain where you have deep expertise?"
+        good_example: "SaaS marketing strategies for B2B growth-stage companies"
+        bad_example: "Business stuff"
+        threshold: 0.8
+        follow_up_example: "What specific aspect of {response} is your strongest area?"
+        context_hints: ["industry", "years_experience", "tools_used"]
+      
+      specific_niche_focus:
+        name: "specific_niche_focus"
+        description: "Narrow, specific area of specialization"
+        question: "Within that domain, what's your specific niche or specialty?"
+        good_example: "AI-driven lead scoring and nurture sequence automation"
+        bad_example: "Marketing automation"
+        threshold: 0.8
+        follow_up_example: "Can you be more specific about what makes your approach unique?"
+        context_hints: ["unique_methodology", "specific_tools", "measurable_outcomes"]
+      
+      ideal_client_definition:
+        name: "ideal_client_definition"
+        description: "Specific characteristics of ideal customers"
+        question: "Who is your ideal client or customer?"
+        good_example: "B2B SaaS founders with 10-50 employees struggling with 20%+ monthly churn"
+        bad_example: "Businesses that need help"
+        threshold: 0.8
+        follow_up_example: "What size company and what specific challenges do they face?"
+        context_hints: ["company_size", "industry", "pain_points", "budget_range"]
+      
+      target_customer_problems:
+        name: "target_customer_problems"
+        description: "Specific problems your ideal customers face"
+        question: "What are the main problems your ideal customers struggle with?"
+        good_example: "High customer acquisition costs due to poor lead qualification and generic messaging"
+        bad_example: "They need more customers"
+        threshold: 0.8
+        follow_up_example: "What does this problem cost them in terms of time, money, or opportunities?"
+        context_hints: ["quantifiable_impact", "urgency", "current_solutions"]
+
+  section_2:
+    name: "Brand Personality & Communication Style"
+    section_number: 2
+    objective: "Define how you communicate and your professional personality"
+    estimated_time: "5-7 minutes"
+    criteria:
+      professional_communication_style:
+        name: "professional_communication_style"
+        description: "How you communicate professionally"
+        question: "How would you describe your communication style when talking about your expertise?"
+        good_example: "Direct and data-driven with practical examples, but conversational and approachable"
+        bad_example: "Professional"
+        threshold: 0.8
+        follow_up_example: "Do you prefer to share case studies, data, stories, or frameworks?"
+        context_hints: ["tone", "formality_level", "evidence_type"]
+      
+      brand_archetype:
+        name: "brand_archetype"
+        description: "Professional archetype or personality"
+        question: "Which professional personality resonates most with you?"
+        good_example: "The Expert: I solve problems through proven methodologies and share what works"
+        bad_example: "The helpful person"
+        threshold: 0.8
+        follow_up_example: "Are you more of a teacher, innovator, strategist, or hands-on implementer?"
+        context_hints: ["teaching_style", "problem_solving_approach", "interaction_preference"]
+      
+      content_sharing_approach:
+        name: "content_sharing_approach"
+        description: "How you prefer to share knowledge and insights"
+        question: "When sharing your expertise, what format do you gravitate toward?"
+        good_example: "Step-by-step frameworks with real case studies and measurable results"
+        bad_example: "Helpful posts"
+        threshold: 0.8
+        follow_up_example: "Do you prefer actionable tips, thought leadership, case studies, or industry insights?"
+        context_hints: ["content_format", "depth_level", "actionability"]
+
+  section_3:
+    name: "Positioning & Value Proposition"
+    section_number: 3
+    objective: "Develop your unique positioning and value proposition"
+    estimated_time: "5-7 minutes"
+    criteria:
+      unique_methodology:
+        name: "unique_methodology"
+        description: "What makes your approach unique"
+        question: "What's unique about your approach or methodology?"
+        good_example: "I use behavioral psychology principles to design onboarding flows that reduce churn by 40%"
+        bad_example: "I do things differently"
+        threshold: 0.8
+        follow_up_example: "What specific process, framework, or insight gives you better results?"
+        context_hints: ["differentiation", "proven_results", "methodology"]
+      
+      measurable_outcomes:
+        name: "measurable_outcomes"
+        description: "Specific results you deliver"
+        question: "What measurable outcomes do you typically deliver for clients?"
+        good_example: "25% reduction in customer acquisition cost within 90 days"
+        bad_example: "Better results"
+        threshold: 0.8
+        follow_up_example: "Can you give me a specific percentage, timeframe, or dollar amount?"
+        context_hints: ["metrics", "timeframe", "typical_improvements"]
+      
+      competitive_advantage:
+        name: "competitive_advantage"
+        description: "What gives you an edge over competitors"
+        question: "What gives you an advantage over others in your field?"
+        good_example: "10 years of behavioral psychology research applied to SaaS user experience"
+        bad_example: "I'm really good at what I do"
+        threshold: 0.8
+        follow_up_example: "What background, experience, or insight do you have that others don't?"
+        context_hints: ["unique_background", "specialized_knowledge", "exclusive_access"]
+      
+      transformation_promise:
+        name: "transformation_promise"
+        description: "The transformation you provide to clients"
+        question: "How do you transform your clients' businesses or situations?"
+        good_example: "Transform struggling SaaS companies from 20% monthly churn to 5% through psychology-based retention"
+        bad_example: "I help them succeed"
+        threshold: 0.8
+        follow_up_example: "What's the before and after state? What changes do they experience?"
+        context_hints: ["before_state", "after_state", "transformation_process"]
+
+  section_4:
+    name: "Content Strategy & Messaging"
+    section_number: 4
+    objective: "Define your content approach and key messages"
+    estimated_time: "4-6 minutes"
+    criteria:
+      key_topics:
+        name: "key_topics"
+        description: "Main topics you'll discuss on LinkedIn"
+        question: "What 2-3 key topics will you focus on in your LinkedIn content?"
+        good_example: "SaaS customer retention strategies, behavioral psychology in UX, and onboarding optimization"
+        bad_example: "Business topics"
+        threshold: 0.8
+        follow_up_example: "What specific aspects of your expertise would be most valuable to your audience?"
+        context_hints: ["expertise_areas", "audience_interests", "content_pillars"]
+      
+      content_frequency:
+        name: "content_frequency"
+        description: "How often you plan to share content"
+        question: "How often do you want to share valuable content on LinkedIn?"
+        good_example: "2-3 tactical posts per week plus 1 detailed case study monthly"
+        bad_example: "Sometimes"
+        threshold: 0.8
+        follow_up_example: "What's realistic for your schedule - daily, weekly, or monthly?"
+        context_hints: ["time_availability", "content_complexity", "consistency_preference"]
+      
+      engagement_approach:
+        name: "engagement_approach"
+        description: "How you'll engage with your network"
+        question: "How do you want to engage with comments and your network?"
+        good_example: "Thoughtful responses with additional insights and questions to spark discussion"
+        bad_example: "I'll respond to comments"
+        threshold: 0.8
+        follow_up_example: "Do you prefer detailed discussions, quick acknowledgments, or asking follow-up questions?"
+        context_hints: ["response_style", "discussion_depth", "network_building_approach"]

@@ -1,0 +1,156 @@
+industry_examples:
+  saas:
+    pain_points:
+      - "High customer acquisition cost due to poor lead qualification"
+      - "Low trial-to-paid conversion rates (below 15%)"
+      - "High customer churn rate in first 90 days"
+      - "Difficulty scaling customer success operations"
+      - "Poor product-market fit validation"
+    
+    value_propositions:
+      - "Reduce CAC by 40% through improved targeting and lead scoring"
+      - "Increase trial conversion rates from 10% to 25%"
+      - "Cut customer churn in half with better onboarding"
+      - "Scale customer success without linear cost increases"
+    
+    expertise_examples:
+      - "SaaS onboarding optimization for growth-stage companies"
+      - "API integration consulting for B2B platforms"
+      - "Customer success automation and playbook development"
+      - "Product-led growth strategy implementation"
+    
+    communication_style:
+      - "Data-driven with clear metrics and case studies"
+      - "Practical frameworks with step-by-step implementation"
+      - "Technical but accessible explanations"
+
+  consulting:
+    pain_points:
+      - "Difficulty differentiating from other consultants"
+      - "Inconsistent lead generation and client acquisition"
+      - "Pricing pressure and commoditization"
+      - "Scaling beyond personal time constraints"
+    
+    value_propositions:
+      - "Proven methodology that delivers 2x faster results"
+      - "Industry-specific expertise with deep domain knowledge"
+      - "Systematic approach to sustainable growth"
+    
+    expertise_examples:
+      - "Digital transformation for mid-market manufacturing"
+      - "Revenue operations optimization for B2B services"
+      - "Change management for technology implementations"
+    
+    communication_style:
+      - "Strategic and advisory tone"
+      - "Case study driven with measurable outcomes"
+      - "Thought leadership with industry insights"
+
+  ecommerce:
+    pain_points:
+      - "Rising customer acquisition costs on paid channels"
+      - "Poor email marketing performance and deliverability"
+      - "Low customer lifetime value and repeat purchases"
+      - "Inventory management and cash flow challenges"
+    
+    value_propositions:
+      - "Increase customer lifetime value by 60% through retention strategies"
+      - "Reduce acquisition costs while scaling revenue"
+      - "Optimize inventory turnover and cash flow"
+    
+    expertise_examples:
+      - "Email marketing automation for e-commerce retention"
+      - "Customer segmentation and personalization strategies"
+      - "Multi-channel attribution and optimization"
+    
+    communication_style:
+      - "Results-focused with clear ROI metrics"
+      - "Tactical advice with immediate implementation steps"
+
+  healthcare:
+    pain_points:
+      - "Complex regulatory compliance requirements"
+      - "Patient acquisition and retention challenges"
+      - "Technology adoption and digital transformation"
+      - "Staff retention and operational efficiency"
+    
+    value_propositions:
+      - "Streamline compliance while improving patient outcomes"
+      - "Increase patient satisfaction scores by 25%"
+      - "Reduce operational costs through process optimization"
+    
+    expertise_examples:
+      - "Healthcare technology implementation and adoption"
+      - "Patient experience optimization"
+      - "Regulatory compliance automation"
+    
+    communication_style:
+      - "Professional and evidence-based"
+      - "Focus on patient outcomes and safety"
+      - "Regulatory awareness in all recommendations"
+
+follow_up_strategies:
+  too_vague:
+    strategy: "provide_specific_examples"
+    example_prompt: "Let me give you some examples to help clarify. In {industry}, I often see expertise like: {example1}, {example2}, or {example3}. Which of these is closer to what you do, or what's your specific area?"
+  
+  too_broad:
+    strategy: "drill_deeper"
+    example_prompt: "That's a great foundation! {broad_area} covers a lot of ground. What specific aspect of {broad_area} do you know better than most people in your field?"
+  
+  off_topic:
+    strategy: "gentle_redirect"
+    example_prompt: "I appreciate you sharing that! For your LinkedIn persona, let's focus on your professional expertise. What's one thing you're known for helping businesses with?"
+  
+  personal_not_professional:
+    strategy: "bridge_to_professional"
+    example_prompt: "That personal insight is valuable! How does that translate into your professional work? What business outcomes do you help clients achieve?"
+  
+  multiple_choice_needed:
+    strategy: "structured_options"
+    example_prompt: "Let me offer some options to help narrow this down: A) {option1}, B) {option2}, C) {option3}, or D) Something else - please describe."
+
+clarification_examples:
+  broad_domain_expertise:
+    explanation: "Your broad domain is the high-level area where you have deep knowledge - like 'digital marketing,' 'software development,' or 'financial planning.' It's the field you're known for."
+    examples:
+      - "SaaS marketing and growth strategies"
+      - "E-commerce operations and logistics"
+      - "B2B sales process optimization"
+      - "Healthcare technology implementation"
+  
+  specific_niche_focus:
+    explanation: "Your niche is the specific problem or approach within your domain that makes you unique. It's what separates you from others in your broad field."
+    examples:
+      - "AI-powered email marketing for SaaS companies"
+      - "Supply chain optimization for D2C brands"
+      - "Outbound sales for cybersecurity companies"
+      - "EHR implementation for small practices"
+  
+  ideal_client_definition:
+    explanation: "Your ideal client is the specific type of person or company you work best with. Include their size, industry, and main challenges."
+    examples:
+      - "Series A SaaS founders with 20-100 employees struggling with product-market fit"
+      - "E-commerce brands doing $1M-10M annually with customer retention issues"
+      - "Mid-market manufacturers implementing digital transformation"
+
+content_format_examples:
+  frameworks:
+    description: "Step-by-step processes and methodologies"
+    example: "The 5-Step Customer Retention Framework I use with SaaS clients"
+  
+  case_studies:
+    description: "Real client results and behind-the-scenes stories"
+    example: "How we reduced churn from 15% to 5% for a $50M SaaS company"
+  
+  tactical_tips:
+    description: "Specific, actionable advice people can implement immediately"
+    example: "3 email sequences that convert 40% more trial users to paid customers"
+  
+  thought_leadership:
+    description: "Industry insights and strategic perspectives"
+    example: "Why most SaaS companies are measuring customer success wrong"
+  
+  behind_the_scenes:
+    description: "Process insights and lessons learned"
+    example: "What I learned from analyzing 1,000 customer churn interviews"
